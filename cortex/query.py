@@ -20,7 +20,7 @@ def load_qa_chain():
     )
 
     retriever = vectorstore.as_retriever(
-        search_kwargs={"k": 4}
+        search_kwargs={"k": 8}
     )
 
     template = """Answer the question based only on the following context: {context}
