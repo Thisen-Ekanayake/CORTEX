@@ -59,7 +59,7 @@ def ask(query: str):
     chain, retriever = load_qa_chain()
     answer = chain.invoke(query)
     
-    docs = retriever._get_relevant_documents(query)
+    docs = retriever._get_relevant_documents(query, run_manager=None)
 
     print("\nAnswer:\n")
     print(answer)
