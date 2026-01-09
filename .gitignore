@@ -1,2 +1,10 @@
+__pycache__/
+chroma_db/
+models/
+data/
+
 *.odt
 *.txt
+*.pdf
+
+!requirements.txt
