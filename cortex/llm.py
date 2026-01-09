@@ -1,12 +1,31 @@
+import torch
 from langchain_community.llms import LlamaCpp
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
 
-def get_llm():
-    return LlamaCpp(
-        model_path="models/qwen2.5-1.5b-instruct-q4_0.gguf",
-        n_ctx=2048,
-        max_tokens=512,
-        temperature=0.2,
-        n_threads=8,
-        verbose=False
-    )
+def get_llm(cpu_fallback=True):
+    gpu_available = torch.cuda.is_available()
+
+    if gpu_available:
+        return LlamaCpp(
+            model_path="models/qwen2.5-1.5b-instruct-q4_0.gguf",
+            n_ctx=2048,
+            max_tokens=512,
+            temperature=0.2,
+            n_threads=8,
+            verbose=False
+        )
+    
+    elif cpu_fallback:
+        model_name = "tinylama-1.1B-chat"
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        model = AutoModelForCausalLM.from_pretrained(model_name)
+
+        return pipeline(
+            "text-generation",
+            model=model,
+            tokenizer=tokenizer
+        )
+    
+    else:
+        raise RuntimeError("No GPU detected and CPU fallback disabled")

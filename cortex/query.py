@@ -9,8 +9,14 @@ from cortex.llm import get_llm
 
 PERSIST_DIR = "chroma_db"
 
+_chain_cache = None     # keep chain in memory
+_retriever_cache = None
 
 def load_qa_chain():
+    global _chain_cache, _retriever_cache
+    if _chain_cache and _retriever_cache:
+        return _chain_cache, _retriever_cache
+    
     embeddings = get_embeddings()
     llm = get_llm()
 
@@ -20,15 +26,21 @@ def load_qa_chain():
     )
 
     retriever = vectorstore.as_retriever(
-        search_kwargs={"k": 8}
+        search_kwargs={"k": 5}      # top 5
     )
 
     template = """Answer the question based only on the following context: {context}
     Question: {question}
+    Provide clear, concise answers and include source filenames for reference.
     """
     prompt = ChatPromptTemplate.from_template(template)
 
     def format_docs(docs):
+        formatted = []
+        for doc in docs:
+            source = doc.metadata.get("source", "unknown")
+            page = doc.metadata.get("page", "N/A")
+            formatted.append(f"[{source}, page {page}]: {doc.page_content}")
         return "\n\n".join(doc.page_content for doc in docs)
     
     chain = (
@@ -38,21 +50,16 @@ def load_qa_chain():
         | StrOutputParser()
     )
 
+    _chain_cache = chain
+    _retriever_cache = retriever
     return chain, retriever
 
 
 def ask(query: str):
     chain, retriever = load_qa_chain()
     answer = chain.invoke(query)
-    # Prefer public API when available; fall back to private method if necessary
-    if hasattr(retriever, "get_relevant_documents"):
-        docs = retriever.get_relevant_documents(query)
-    else:
-        try:
-            docs = retriever._get_relevant_documents(query, run_manager=None)
-        except TypeError:
-            # Older signature may not accept run_manager kw; try positional
-            docs = retriever._get_relevant_documents(query)
+    
+    docs = retriever._get_relevant_documents(query)
 
     print("\nAnswer:\n")
     print(answer)

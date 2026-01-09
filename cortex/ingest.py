@@ -29,6 +29,9 @@ def load_documents():
         else:
             continue
 
+        docs = loader.load()
+        for doc in docs:
+            doc.metadata['source'] = filename
         documents.extend(loader.load())
 
     return documents
@@ -50,7 +53,7 @@ def ingest():
     )
 
     chunks = splitter.split_documents(documents)
-    print(f"🔹 Split into {len(chunks)} chunks")
+    print(f"Split into {len(chunks)} chunks")
 
     embeddings = get_embeddings()
 
