@@ -7,4 +7,6 @@ data/
 *.txt
 *.pdf
 
+testing.ipynb
+
 !requirements.txt
