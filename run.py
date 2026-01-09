@@ -1,4 +1,6 @@
+import os
 import argparse
+import logging
 from cortex.ingest import ingest
 from cortex.query import ask
 
@@ -22,8 +24,14 @@ def main():
         ingest()
 
     if args.ask:
-        ask(args.ask)
-
+        if not os.path.exists("chroma_db/chroma.sqlite3"):
+            print("Vector DB not found. Run with --ingest first")
+        
+        else:
+            logging.basicConfig(filename="query.log", level=logging.INFO)
+            logging.info(f"Query asked: {args.ask}")
+            ask(args.ask)
+            
 
 if __name__ == "__main__":
     main()
