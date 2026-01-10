@@ -7,6 +7,7 @@ from rich.markdown import Markdown
 
 from cortex.query import load_qa_chain
 from cortex.memory import ConversationMemory
+from cortex.streaming import SreamHandler
 import asyncio
 
 class AnswerBox(Static):
@@ -55,8 +56,20 @@ class CortexUI(App):
 
         chain, retriever = load_qa_chain()
 
-        # run retrieval
-        answer = await asyncio.to_thread(chain.invoke, query)
+        # run retrieval with streaming callback
+        answer_text = ""
+        
+        def stream_token(token):
+            nonlocal answer_text
+            answer_text += token
+            self.query_one("#answer").update_text(answer_text)
+        
+        handler = SreamHandler(stream_token)
+        
+        await asyncio.to_thread(
+            lambda: list(chain.stream(query, config={"callbacks": [handler]}))
+        )
+        
         docs = retriever._get_relevant_documents(query, run_manager=None)
 
         sources = []
@@ -65,11 +78,10 @@ class CortexUI(App):
             page = doc.metadata.get("page", "N/A")
             sources.append(f"- {src} (page {page})")
 
-        self.query_one("#answer").update_text(answer)
         self.query_one("#sources").update("\n".join(sources))
 
     async def on_key(self, event: Key):
-        if event.ctrl and event.key == "r":
+        if "ctrl" in event.key and event.key == "ctrl+r":
             self.show_history = not self.show_history
             if self.show_history:
                 self.open_history()
