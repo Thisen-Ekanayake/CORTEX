@@ -13,13 +13,14 @@ PERSIST_DIR = "chroma_db"
 _chain_cache = None     # keep chain in memory
 _retriever_cache = None
 
-def load_qa_chain():
+def load_qa_chain(callbacks=None):
     global _chain_cache, _retriever_cache
-    if _chain_cache and _retriever_cache:
+    # don't use cache if callbacks are provided (for streaming)
+    if _chain_cache and _retriever_cache and not callbacks:
         return _chain_cache, _retriever_cache
     
     embeddings = get_embeddings()
-    llm = get_llm()
+    llm = get_llm(streaming=True, callbacks=callbacks)
 
     vectorstore = Chroma(
         persist_directory=PERSIST_DIR,

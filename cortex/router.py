@@ -33,16 +33,33 @@ def route_query(query: str) -> Route:
         return Route.META
     return Route.CHAT
 
-def execute(query: str):
+def execute(query: str, callbacks=None):
     route = route_query(query)
 
     if route == Route.RAG:
-        chain, _ = load_qa_chain()
-        return chain.invoke(query)
+        chain, _ = load_qa_chain(callbacks=callbacks)
+        if callbacks:
+            # use streaming when callbacks are provided
+            # callbacks are already attached to the llm in the chain
+            result_chunks = []
+            for chunk in chain.stream(query):
+                result_chunks.append(chunk)
+            return "".join(result_chunks)
+        else:
+            return chain.invoke(query)
     
     if route == Route.META:
         return CORTEX_SYSTEM_PROMPT
     
-    llm = get_llm()
+    llm = get_llm(streaming=True, callbacks=callbacks)
     full_prompt = f"{CORTEX_SYSTEM_PROMPT}\n\nUser: {query}\nAssistant:"
-    return llm.invoke(full_prompt)
+    
+    if callbacks:
+        # use streaming when callbacks are provided
+        # callbacks are already attached to the llm
+        result_chunks = []
+        for chunk in llm.stream(full_prompt):
+            result_chunks.append(chunk)
+        return "".join(result_chunks)
+    else:
+        return llm.invoke(full_prompt)
