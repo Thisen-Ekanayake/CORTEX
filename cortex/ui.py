@@ -48,30 +48,129 @@ prompt_style = Style.from_dict({
 
 def print_logo(animate=False):
     """Display the CORTEX logo with styling"""
-    logo = get_logo(compact=False, futuristic=True)
+    from cortex.logo import CORTEX_LOGO_TEXT
     
-    # Center the logo
-    centered_logo = Align.center(logo)
+    # Work with the original logo text to preserve structure
+    # Don't use strip() as it removes the initial newline which affects line numbering
+    logo_lines = CORTEX_LOGO_TEXT.split('\n')
+    # Filter out empty lines at start/end but preserve structure
+    # Remove leading empty lines
+    while logo_lines and not logo_lines[0].strip():
+        logo_lines.pop(0)
+    # Remove trailing empty lines
+    while logo_lines and not logo_lines[-1].strip():
+        logo_lines.pop()
+    
+    # Find the leftmost character position (minimum leading whitespace)
+    min_leading = float('inf')
+    for line in logo_lines:
+        if line.strip():  # Only consider non-empty lines
+            leading = len(line) - len(line.lstrip())
+            min_leading = min(min_leading, leading)
+    
+    if min_leading == float('inf'):
+        min_leading = 0
+    
+    # Normalize: remove minimum leading whitespace from all lines
+    # This aligns all lines to the leftmost character while preserving relative positions
+    normalized_lines = []
+    for line in logo_lines:
+        if line.strip():
+            # Remove min_leading spaces from the start
+            normalized_line = line[min_leading:] if len(line) > min_leading else line.lstrip()
+            normalized_lines.append(normalized_line)
+        else:
+            normalized_lines.append('')
+    
+    # Find the maximum width of normalized lines
+    max_width = max(len(line) for line in normalized_lines) if normalized_lines else 0
+    
+    # Get available width in Panel (terminal width - borders - padding)
+    # Panel: 2 char borders + 4 char horizontal padding = 6 chars
+    terminal_width = console.width if hasattr(console, 'width') and console.width else 80
+    available_width = terminal_width - 6
+    
+    # Calculate padding to center the block
+    padding = max(0, (available_width - max_width) // 2)
+    
+    # Add consistent padding to all lines to center the block
+    padded_lines = [' ' * padding + line for line in normalized_lines]
+    centered_logo_text = '\n'.join(padded_lines)
+    
+    # Now apply Rich styling to the centered text
+    # Rebuild the logo with proper styling
+    styled_logo = Text()
+    centered_lines = centered_logo_text.split('\n')
+    
+    for i, line in enumerate(centered_lines):
+        if '██' in line:
+            # Main CORTEX text - bright cyan bold
+            styled_logo.append(line, style="bold bright_cyan")
+        elif 'Think. Retrieve. Answer.' in line:
+            # Tagline - special gradient
+            parts = line.split('Think')
+            styled_logo.append(parts[0], style="cyan")
+            styled_logo.append('Think', style="bold bright_green")
+            
+            remaining = 'Think'.join(parts[1:])
+            parts2 = remaining.split('Retrieve')
+            styled_logo.append(parts2[0], style="cyan")
+            styled_logo.append('Retrieve', style="bold bright_blue")
+            
+            remaining2 = 'Retrieve'.join(parts2[1:])
+            parts3 = remaining2.split('Answer')
+            styled_logo.append(parts3[0], style="cyan")
+            styled_logo.append('Answer', style="bold bright_magenta")
+            styled_logo.append('Answer'.join(parts3[1:]), style="cyan")
+        else:
+            # Empty or separator lines
+            styled_logo.append(line, style="cyan")
+        
+        if i < len(centered_lines) - 1:
+            styled_logo.append('\n')
     
     if animate:
         # Animate logo appearance
-        logo_str = str(logo)
-        lines = logo_str.split('\n')
-        for i in range(1, len(lines) + 1):
-            partial_logo = '\n'.join(lines[:i])
+        for i in range(1, len(centered_lines) + 1):
+            partial_lines = centered_lines[:i]
+            partial_text = '\n'.join(partial_lines)
+            
+            # Apply styling to partial text
+            partial_styled = Text()
+            for j, line in enumerate(partial_lines):
+                if '██' in line:
+                    partial_styled.append(line, style="bold bright_cyan")
+                elif 'Think. Retrieve. Answer.' in line:
+                    parts = line.split('Think')
+                    partial_styled.append(parts[0], style="cyan")
+                    partial_styled.append('Think', style="bold bright_green")
+                    remaining = 'Think'.join(parts[1:])
+                    parts2 = remaining.split('Retrieve')
+                    partial_styled.append(parts2[0], style="cyan")
+                    partial_styled.append('Retrieve', style="bold bright_blue")
+                    remaining2 = 'Retrieve'.join(parts2[1:])
+                    parts3 = remaining2.split('Answer')
+                    partial_styled.append(parts3[0], style="cyan")
+                    partial_styled.append('Answer', style="bold bright_magenta")
+                    partial_styled.append('Answer'.join(parts3[1:]), style="cyan")
+                else:
+                    partial_styled.append(line, style="cyan")
+                if j < len(partial_lines) - 1:
+                    partial_styled.append('\n')
+            
             console.print(Panel(
-                Align.center(partial_logo),
+                partial_styled,
                 border_style="bright_cyan",
                 padding=(1, 2),
                 title="[bold bright_cyan]CORTEX v1.0[/bold bright_cyan]",
                 subtitle="[dim bright_cyan]Neural Interface | Local AI Knowledge Assistant[/dim bright_cyan]"
             ))
             time.sleep(0.05)
-            if i < len(lines):
+            if i < len(centered_lines):
                 console.clear()
     else:
         console.print(Panel(
-            centered_logo,
+            styled_logo,
             border_style="bright_cyan",
             padding=(1, 2),
             title="[bold bright_cyan]CORTEX v1.0[/bold bright_cyan]",
