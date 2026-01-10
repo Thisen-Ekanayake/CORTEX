@@ -6,3 +6,7 @@ sentence-transformers
 pypdf 
 python-docx 
 llama-cpp-python
+
+# UI
+textual
+rich
