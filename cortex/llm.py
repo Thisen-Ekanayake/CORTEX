@@ -3,7 +3,7 @@ from langchain_community.llms import LlamaCpp
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
 
-def get_llm(cpu_fallback=True):
+def get_llm(streaming=False, callbacks=None, cpu_fallback=True):
     gpu_available = torch.cuda.is_available()
 
     if gpu_available:
@@ -13,6 +13,8 @@ def get_llm(cpu_fallback=True):
             max_tokens=512,
             temperature=0.2,
             n_threads=8,
+            streaming=streaming,
+            callbacks=callbacks or [],
             verbose=False
         )
     

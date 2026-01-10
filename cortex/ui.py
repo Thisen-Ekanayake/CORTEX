@@ -1,10 +1,12 @@
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, Input, Static
+from textual.widgets import Header, Footer, Input, Static, ListView, ListItem, Label
 from textual.containers import Vertical
 from textual.reactive import reactive
+from textual.events import Key
 from rich.markdown import Markdown
 
 from cortex.query import load_qa_chain
+from cortex.memory import ConversationMemory
 import asyncio
 
 class AnswerBox(Static):
@@ -25,6 +27,9 @@ class CortexUI(App):
         color: #00ffcc;
     }
     """
+
+    memory = ConversationMemory()
+    show_history = reactive(False)
 
     answer_text = reactive("")
     sources_text = reactive("")
@@ -62,6 +67,24 @@ class CortexUI(App):
 
         self.query_one("#answer").update_text(answer)
         self.query_one("#sources").update("\n".join(sources))
+
+    async def on_key(self, event: Key):
+        if event.ctrl and event.key == "r":
+            self.show_history = not self.show_history
+            if self.show_history:
+                self.open_history()
+
+    def open_history(self):
+        queries = self.memory.all_queries()
+        items = [ListItem(Label(q)) for q in queries[::-1]]
+
+        self.mount(
+            ListView(*items, id="history")
+        )
+
+    def stream_token(self, token):
+        current = self.query_one("#answer").renderable
+        self.query_one("#answer").update_text(str(current) + token)
 
 if __name__ == "__main__":
     CortexUI().run()
