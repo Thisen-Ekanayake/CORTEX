@@ -10,3 +10,4 @@ llama-cpp-python
 # UI
 textual
 rich
+prompt-toolkit
