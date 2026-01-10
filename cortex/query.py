@@ -1,10 +1,11 @@
 from langchain_community.vectorstores import Chroma
-from langchain_core.runnables import RunnablePassthrough
+from langchain_core.runnables import RunnablePassthrough, RunnableLambda
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
 from cortex.embeddings import get_embeddings
 from cortex.llm import get_llm
+from cortex.persona import CORTEX_SYSTEM_PROMPT
 
 
 PERSIST_DIR = "chroma_db"
@@ -29,10 +30,15 @@ def load_qa_chain():
         search_kwargs={"k": 5}      # top 5
     )
 
-    template = """Answer the question based only on the following context: {context}
-    Question: {question}
-    Provide clear, concise answers and include source filenames for reference.
-    """
+    template = """You are CORTEX - a local, privacy-first AI assistant.
+        Answer the question based only on the following context:
+        {context}
+
+        {persona_prompt}
+
+        Question: {question}
+        Provide clear, concise answers and include source filenames for reference.
+        """
     prompt = ChatPromptTemplate.from_template(template)
 
     def format_docs(docs):
@@ -44,7 +50,7 @@ def load_qa_chain():
         return "\n\n".join(doc.page_content for doc in docs)
     
     chain = (
-        {"context": retriever | format_docs, "question": RunnablePassthrough()}
+        {"context": retriever | format_docs, "question": RunnablePassthrough(), "persona_prompt": RunnableLambda(lambda x: CORTEX_SYSTEM_PROMPT)}
         | prompt
         | llm
         | StrOutputParser()

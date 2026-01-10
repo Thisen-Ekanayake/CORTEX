@@ -55,8 +55,6 @@ class CortexUI(App):
         if not query:
             return
 
-        self.memory.add_query(query)
-
         self.query_one("#answer").update_text("Thinking...")
         self.query_one("#sources").update("")
 
@@ -65,6 +63,7 @@ class CortexUI(App):
 
         # display result
         self.query_one("#answer").update_text(result)
+        self.memory.add(query, result)
 
     async def on_key(self, event: Key):
         if event.key == "ctrl+r":

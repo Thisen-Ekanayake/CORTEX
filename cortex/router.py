@@ -2,6 +2,7 @@ from enum import Enum
 
 from cortex.llm import get_llm
 from cortex.query import load_qa_chain
+from cortex.persona import CORTEX_SYSTEM_PROMPT
 
 class Route(Enum):
     RAG = "rag"
@@ -40,10 +41,8 @@ def execute(query: str):
         return chain.invoke(query)
     
     if route == Route.META:
-        return (
-            "I am CORTEXT - a local knowledge interface built on your documents."
-            "I retrieve context-aware answers using a vector database and a local LLM."
-        )
+        return CORTEX_SYSTEM_PROMPT
     
     llm = get_llm()
-    return llm.invoke(query)
+    full_prompt = f"{CORTEX_SYSTEM_PROMPT}\n\nUser: {query}\nAssistant:"
+    return llm.invoke(full_prompt)
