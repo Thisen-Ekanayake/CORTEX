@@ -8,6 +8,7 @@ from rich.markdown import Markdown
 from cortex.query import load_qa_chain
 from cortex.memory import ConversationMemory
 from cortex.streaming import SreamHandler
+from cortex.router import execute
 import asyncio
 
 class AnswerBox(Static):
@@ -48,51 +49,40 @@ class CortexUI(App):
         yield Footer()
 
     async def on_input_submitted(self, event: Input.Submitted):
-        query = event.value
+        query = event.value.strip()
         event.input.value = ""
 
-        self.query_one("#answer").update_text("Retrieving Knowledge...")
+        if not query:
+            return
+
+        self.memory.add_query(query)
+
+        self.query_one("#answer").update_text("Thinking...")
         self.query_one("#sources").update("")
 
-        chain, retriever = load_qa_chain()
+        # run through router (single brain entry)
+        result = await asyncio.to_thread(lambda: execute(query))
 
-        # run retrieval with streaming callback
-        answer_text = ""
-        
-        def stream_token(token):
-            nonlocal answer_text
-            answer_text += token
-            self.query_one("#answer").update_text(answer_text)
-        
-        handler = SreamHandler(stream_token)
-        
-        await asyncio.to_thread(
-            lambda: list(chain.stream(query, config={"callbacks": [handler]}))
-        )
-        
-        docs = retriever._get_relevant_documents(query, run_manager=None)
-
-        sources = []
-        for doc in docs:
-            src = doc.metadata.get("source", "unknown")
-            page = doc.metadata.get("page", "N/A")
-            sources.append(f"- {src} (page {page})")
-
-        self.query_one("#sources").update("\n".join(sources))
+        # display result
+        self.query_one("#answer").update_text(result)
 
     async def on_key(self, event: Key):
-        if "ctrl" in event.key and event.key == "ctrl+r":
+        if event.key == "ctrl+r":
             self.show_history = not self.show_history
             if self.show_history:
                 self.open_history()
+            else:
+                self.close_history()
 
     def open_history(self):
         queries = self.memory.all_queries()
         items = [ListItem(Label(q)) for q in queries[::-1]]
 
-        self.mount(
-            ListView(*items, id="history")
-        )
+        self.mount(ListView(*items, id="history"))
+
+    def close_history(self):
+        if self.query("#history"):
+            self.query_one("#history").remove()
 
     def stream_token(self, token):
         current = self.query_one("#answer").renderable
