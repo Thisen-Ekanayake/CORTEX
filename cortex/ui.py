@@ -14,6 +14,7 @@ from rich.spinner import Spinner
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
 from rich.markdown import Markdown
 from rich.table import Table
+from rich.align import Align
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
@@ -45,17 +46,21 @@ prompt_style = Style.from_dict({
 })
 
 
-def print_logo(animate=True):
+def print_logo(animate=False):
     """Display the CORTEX logo with styling"""
     logo = get_logo(compact=False, futuristic=True)
     
+    # Center the logo
+    centered_logo = Align.center(logo)
+    
     if animate:
         # Animate logo appearance
-        lines = logo.split('\n')
+        logo_str = str(logo)
+        lines = logo_str.split('\n')
         for i in range(1, len(lines) + 1):
             partial_logo = '\n'.join(lines[:i])
             console.print(Panel(
-                partial_logo,
+                Align.center(partial_logo),
                 border_style="bright_cyan",
                 padding=(1, 2),
                 title="[bold bright_cyan]CORTEX v1.0[/bold bright_cyan]",
@@ -66,7 +71,7 @@ def print_logo(animate=True):
                 console.clear()
     else:
         console.print(Panel(
-            logo,
+            centered_logo,
             border_style="bright_cyan",
             padding=(1, 2),
             title="[bold bright_cyan]CORTEX v1.0[/bold bright_cyan]",
@@ -331,7 +336,7 @@ def process_query(query: str):
 
 def interactive_mode():
     """Run interactive CLI mode"""
-    print_logo(animate=True)  # Set to True for animated logo
+    print_logo(animate=False)  # Set to True for animated logo
     print_welcome()
     
     # Check initial status
