@@ -82,5 +82,9 @@ class CortexUI(App):
             ListView(*items, id="history")
         )
 
+    def stream_token(self, token):
+        current = self.query_one("#answer").renderable
+        self.query_one("#answer").update_text(str(current) + token)
+
 if __name__ == "__main__":
     CortexUI().run()
