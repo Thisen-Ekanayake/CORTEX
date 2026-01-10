@@ -19,6 +19,7 @@ from prompt_toolkit.history import FileHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.styles import Style
+from prompt_toolkit.formatted_text import HTML
 
 from cortex.ingest import ingest
 from cortex.query import load_qa_chain
@@ -37,14 +38,14 @@ memory = ConversationMemory()
 COMMANDS = ['help', 'exit', 'quit', 'clear', 'history', 'ingest', 'status']
 completer = WordCompleter(COMMANDS, ignore_case=True)
 
-# Prompt style
+# Prompt style - using prompt_toolkit's style format
 prompt_style = Style.from_dict({
-    'prompt': 'cyan bold',
-    'input': 'fg:#00ff00',
+    'prompt': '#00ffff bold',  # Cyan bold for CORTEX
+    'arrow': '#00ff00',        # Green for arrow
 })
 
 
-def print_logo(animate=False):
+def print_logo(animate=True):
     """Display the CORTEX logo with styling"""
     logo = get_logo(compact=False, futuristic=True)
     
@@ -330,7 +331,7 @@ def process_query(query: str):
 
 def interactive_mode():
     """Run interactive CLI mode"""
-    print_logo(animate=False)  # Set to True for animated logo
+    print_logo(animate=True)  # Set to True for animated logo
     print_welcome()
     
     # Check initial status
@@ -354,8 +355,8 @@ def interactive_mode():
     # Main loop
     while True:
         try:
-            # Get user input with custom prompt
-            prompt_text = "[bold bright_cyan]CORTEX[/bold bright_cyan][bright_green] >[/bright_green] "
+            # Get user input with custom prompt using HTML formatting for prompt_toolkit
+            prompt_text = HTML('<prompt>CORTEX</prompt><arrow> > </arrow>')
             
             query = session.prompt(prompt_text)
             
