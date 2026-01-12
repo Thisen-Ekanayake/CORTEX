@@ -23,6 +23,7 @@ Respond with only ONE word: RAG or CHAT.
 """
 
 def route_query(query: str) -> Route:
+    """classify query and return appropriate route"""
     llm = get_llm()
     result = llm.invoke(
         ROUTER_PROMPT.format(query=query)
@@ -33,6 +34,7 @@ def route_query(query: str) -> Route:
     return Route.CHAT   # default to chat for safety
 
 def execute(query: str, callbacks=None):
+    """execute query based on routing decision"""
     route = route_query(query)
 
     if route == Route.RAG:
