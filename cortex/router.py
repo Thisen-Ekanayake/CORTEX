@@ -30,9 +30,7 @@ def route_query(query: str) -> Route:
 
     if "RAG" in result:
         return Route.RAG
-    if "META" in result:
-        return Route.META
-    return Route.CHAT
+    return Route.CHAT   # default to chat for safety
 
 def execute(query: str, callbacks=None):
     route = route_query(query)
