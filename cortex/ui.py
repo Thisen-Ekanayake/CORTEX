@@ -356,12 +356,13 @@ def stream_response(query: str):
         
         # Display final answer with sources
         if response_buffer:
-            console.print(Panel(
-                Markdown(response_buffer),
-                title="[bold green]CORTEX Response[/bold green]",
-                border_style="green",
-                padding=(1, 2)
-            ))
+            # Final answer already shown during streaming; keep sources/history only
+            # console.print(Panel(
+            #     Markdown(response_buffer),
+            #     title="[bold green]CORTEX Response[/bold green]",
+            #     border_style="green",
+            #     padding=(1, 2)
+            # ))
             
             # Show sources if available
             try:
