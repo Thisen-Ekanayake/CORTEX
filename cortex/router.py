@@ -7,18 +7,19 @@ from cortex.persona import CORTEX_SYSTEM_PROMPT
 class Route(Enum):
     RAG = "rag"
     CHAT = "chat"
-    META = "meta"
 
 ROUTER_PROMPT = """
-Classify the user query into ONE of the following catgeories:
+Classify the user query into ONE of the following categories:
 
-- RAG: requires searching the document knowledge base
-- CHAT: general reasoning or explanation, no documents needed
-- META: about the system itself
+- RAG: User is asking for specific information that would be found in documents 
+  (e.g., "what does the report say about sales?", "find information about X")
+- CHAT: General conversation, greetings, questions about the assistant, 
+  reasoning, explanations that don't need documents
+  (e.g., "hi", "who are you?", "explain quantum physics", "help me code")
 
 Query: "{query}"
 
-Respond with only one word: RAG, CHAT, or META.
+Respond with only ONE word: RAG or CHAT.
 """
 
 def route_query(query: str) -> Route:
