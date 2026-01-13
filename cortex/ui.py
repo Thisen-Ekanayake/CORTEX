@@ -164,7 +164,7 @@ def print_logo(animate=False):
                 border_style="bright_cyan",
                 padding=(1, 2),
                 title="[bold bright_cyan]CORTEX v1.0[/bold bright_cyan]",
-                subtitle="[dim bright_cyan]Neural Interface | Local AI Knowledge Assistant[/dim bright_cyan]"
+                subtitle="[bright_cyan]Neural Interface | Local AI Knowledge Assistant[/bright_cyan]"
             ))
             time.sleep(0.05)
             if i < len(centered_lines):
@@ -175,7 +175,7 @@ def print_logo(animate=False):
             border_style="bright_cyan",
             padding=(1, 2),
             title="[bold bright_cyan]CORTEX v1.0[/bold bright_cyan]",
-            subtitle="[dim bright_cyan]Neural Interface | Local AI Knowledge Assistant[/dim bright_cyan]"
+            subtitle="[bright_cyan]Neural Interface | Local AI Knowledge Assistant[/bright_cyan]"
         ))
     console.print()
 
