@@ -1,78 +1,147 @@
+from typing import List, Tuple, Optional
+
 from langchain_chroma import Chroma
-from langchain_core.runnables import RunnablePassthrough, RunnableLambda
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnableLambda, RunnablePassthrough
 
 from cortex.embeddings import get_embeddings
 from cortex.llm import get_llm
-from cortex.persona import CORTEX_SYSTEM_PROMPT
-
 
 PERSIST_DIR = "chroma_db"
 
-_chain_cache = None     # keep chain in memory
-_retriever_cache = None
+# -------------------------
+# Internal caches
+# -------------------------
+_vectorstore = None
+_retriever = None
+_rag_chain = None
 
-def load_qa_chain(callbacks=None):
-    global _chain_cache, _retriever_cache
-    # don't use cache if callbacks are provided (for streaming)
-    if _chain_cache and _retriever_cache and not callbacks:
-        return _chain_cache, _retriever_cache
-    
+
+# -------------------------
+# Vector store / retriever
+# -------------------------
+def get_retriever():
+    global _vectorstore, _retriever
+
+    if _retriever is not None:
+        return _retriever
+
     embeddings = get_embeddings()
+
+    _vectorstore = Chroma(
+        persist_directory=PERSIST_DIR,
+        embedding_function=embeddings,
+    )
+
+    _retriever = _vectorstore.as_retriever(
+        search_kwargs={"k": 5}
+    )
+
+    return _retriever
+
+
+# -------------------------
+# Document utilities
+# -------------------------
+def retrieve_docs(query: str):
+    retriever = get_retriever()
+    return retriever.invoke(query)
+
+
+def format_docs(docs) -> str:
+    if not docs:
+        return ""
+
+    chunks = []
+    for doc in docs:
+        source = doc.metadata.get("source", "unknown")
+        page = doc.metadata.get("page", "N/A")
+        content = doc.page_content.strip()
+        chunks.append(f"[{source}, page {page}]\n{content}")
+
+    return "\n\n".join(chunks)
+
+
+# -------------------------
+# RAG chain
+# -------------------------
+def get_rag_chain(callbacks=None):
+    global _rag_chain
+
+    if _rag_chain and not callbacks:
+        return _rag_chain
+
     llm = get_llm(streaming=True, callbacks=callbacks)
 
-    vectorstore = Chroma(
-        persist_directory=PERSIST_DIR,
-        embedding_function=embeddings
+    prompt = ChatPromptTemplate.from_template(
+        """Answer the question using ONLY the context below.
+If the context does not contain the answer, respond with "I don't know".
+
+Context:
+{context}
+
+Question:
+{question}
+"""
     )
 
-    retriever = vectorstore.as_retriever(
-        search_kwargs={"k": 5}      # top 5
-    )
-
-    template = """You are CORTEX - a local, privacy-first AI assistant.
-        Answer the question based only on the following context:
-        {context}
-
-        {persona_prompt}
-
-        Question: {question}
-        Provide clear, concise answers and include source filenames for reference.
-        """
-    prompt = ChatPromptTemplate.from_template(template)
-
-    def format_docs(docs):
-        formatted = []
-        for doc in docs:
-            source = doc.metadata.get("source", "unknown")
-            page = doc.metadata.get("page", "N/A")
-            formatted.append(f"[{source}, page {page}]: {doc.page_content}")
-        return "\n\n".join(doc.page_content for doc in docs)
+    # Create a runnable that retrieves and formats documents
+    # Use retrieve_docs which now uses vectorstore directly
+    def retrieve_and_format(query: str) -> str:
+        docs = retrieve_docs(query)
+        return format_docs(docs)
     
     chain = (
-        {"context": retriever | format_docs, "question": RunnablePassthrough(), "persona_prompt": RunnableLambda(lambda x: CORTEX_SYSTEM_PROMPT)}
+        {
+            "context": RunnableLambda(retrieve_and_format),
+            "question": RunnablePassthrough(),
+        }
         | prompt
         | llm
         | StrOutputParser()
     )
 
-    _chain_cache = chain
-    _retriever_cache = retriever
-    return chain, retriever
+    if not callbacks:
+        _rag_chain = chain
+
+    return chain
 
 
-def ask(query: str):
-    chain, retriever = load_qa_chain()
-    answer = chain.invoke(query)
-    
-    docs = retriever._get_relevant_documents(query, run_manager=None)
+# -------------------------
+# Public API
+# -------------------------
+def run_rag(query: str, callbacks=None) -> Optional[str]:
+    """
+    Executes RAG only if relevant documents exist.
+    Returns None if RAG should NOT be used.
+    """
+    docs = retrieve_docs(query)
 
-    print("\nAnswer:\n")
-    print(answer)
+    if not docs:
+        return None
 
-    print("\nSources:\n")
+    chain = get_rag_chain(callbacks=callbacks)
+
+    if callbacks:
+        chunks = []
+        for chunk in chain.stream(query):
+            chunks.append(chunk)
+        return "".join(chunks)
+
+    return chain.invoke(query)
+
+
+def get_sources(query: str) -> List[str]:
+    """
+    Explicit source retrieval (only call after RAG ran).
+    """
+    docs = retrieve_docs(query)
+    sources = []
+
     for doc in docs:
         source = doc.metadata.get("source", "unknown")
         page = doc.metadata.get("page", "N/A")
-        print(f"- {source}, page {page}")
+        sources.append(f"{source}, page {page}")
+
+    return sources
