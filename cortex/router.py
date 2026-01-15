@@ -1,7 +1,7 @@
 from enum import Enum
 
 from cortex.llm import get_llm
-from cortex.query import load_qa_chain
+from cortex.query import run_rag
 from cortex.persona import CORTEX_SYSTEM_PROMPT
 
 class Route(Enum):
@@ -42,16 +42,14 @@ def execute(query: str, callbacks=None):
     route = route_query(query)
 
     if route == Route.RAG:
-        chain, _ = load_qa_chain(callbacks=callbacks)
-        if callbacks:
-            # use streaming when callbacks are provided
-            # callbacks are already attached to the llm in the chain
-            result_chunks = []
-            for chunk in chain.stream(query):
-                result_chunks.append(chunk)
-            return "".join(result_chunks)
+        # use run_rag from query.py which handles retrieval and chain execution
+        result = run_rag(query, callbacks=callbacks)
+        
+        # if no documents found, fall back to CHAT
+        if result is None:
+            route = Route.CHAT
         else:
-            return chain.invoke(query)
+            return result
     
     if route == Route.META:
         # generate natural response about the system using the system prompt as context
