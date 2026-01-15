@@ -1,4 +1,4 @@
-from typing import List, Tuple, Optional
+from typing import List, Optional
 
 from langchain_chroma import Chroma
 from langchain_core.output_parsers import StrOutputParser
