@@ -11,6 +11,7 @@ from rich.panel import Panel
 from rich.text import Text
 from rich.live import Live
 from rich.spinner import Spinner
+from rich.status import Status
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
 from rich.markdown import Markdown
 from rich.table import Table
@@ -163,7 +164,7 @@ def print_logo(animate=False):
                 border_style="bright_cyan",
                 padding=(1, 2),
                 title="[bold bright_cyan]CORTEX v1.0[/bold bright_cyan]",
-                subtitle="[dim bright_cyan]Neural Interface | Local AI Knowledge Assistant[/dim bright_cyan]"
+                subtitle="[bright_cyan]Neural Interface | Local AI Knowledge Assistant[/bright_cyan]"
             ))
             time.sleep(0.05)
             if i < len(centered_lines):
@@ -174,7 +175,7 @@ def print_logo(animate=False):
             border_style="bright_cyan",
             padding=(1, 2),
             title="[bold bright_cyan]CORTEX v1.0[/bold bright_cyan]",
-            subtitle="[dim bright_cyan]Neural Interface | Local AI Knowledge Assistant[/dim bright_cyan]"
+            subtitle="[bright_cyan]Neural Interface | Local AI Knowledge Assistant[/bright_cyan]"
         ))
     console.print()
 
@@ -334,7 +335,7 @@ def stream_response(query: str):
         with Live(
             Panel(streaming_response, title="[bold green]CORTEX Response[/bold green]", border_style="green", padding=(1, 2)),
             console=console,
-            refresh_per_second=20,
+            refresh_per_second=5,
             transient=False
         ) as live:
             while not stream_complete.is_set() or not token_queue.empty():
@@ -350,18 +351,21 @@ def stream_response(query: str):
                     streaming_response.update(response_buffer)
                     live.update(Panel(streaming_response, title="[bold green]CORTEX Response[/bold green]", border_style="green", padding=(1, 2)))
                 except queue.Empty:
+                    # Update live display even when waiting to animate spinner
+                    live.update(Panel(streaming_response, title="[bold green]CORTEX Response[/bold green]", border_style="green", padding=(1, 2)))
                     continue
         
         query_thread.join(timeout=2)
         
         # Display final answer with sources
         if response_buffer:
-            console.print(Panel(
-                Markdown(response_buffer),
-                title="[bold green]CORTEX Response[/bold green]",
-                border_style="green",
-                padding=(1, 2)
-            ))
+            # Final answer already shown during streaming; keep sources/history only
+            # console.print(Panel(
+            #     Markdown(response_buffer),
+            #     title="[bold green]CORTEX Response[/bold green]",
+            #     border_style="green",
+            #     padding=(1, 2)
+            # ))
             
             # Show sources if available
             try:

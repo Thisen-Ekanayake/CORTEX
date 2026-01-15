@@ -123,7 +123,6 @@ def get_logo_neon(compact=False):
     return text
 
 
-# Example usage
 if __name__ == "__main__":
     from rich.console import Console
     from rich.panel import Panel
@@ -138,7 +137,7 @@ if __name__ == "__main__":
         border_style="bright_cyan",
         padding=(1, 2),
         title="[bold bright_cyan]CORTEX v1.0[/bold bright_cyan]",
-        subtitle="[dim bright_cyan]Neural Interface | Local AI Knowledge Assistant[/dim bright_cyan]"
+        subtitle="[bright_cyan]Neural Interface | Local AI Knowledge Assistant[/bright_cyan]"
     ))
     
     console.print("\n[bold white]Gradient Logo:[/bold white]")
