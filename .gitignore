@@ -2,11 +2,14 @@ __pycache__/
 chroma_db/
 models/
 data/
+.lang_venv/
 
 *.odt
 *.txt
 *.pdf
 *.log
+
+.env
 
 testing.ipynb
 
