@@ -11,3 +11,7 @@ llama-cpp-python
 textual
 rich
 prompt-toolkit
+
+# YouTube
+yt_dlp
+pydub
