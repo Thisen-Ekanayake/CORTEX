@@ -3,6 +3,7 @@ chroma_db/
 models/
 data/
 .lang_venv/
+youtube/
 
 *.odt
 *.txt
