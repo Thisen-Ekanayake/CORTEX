@@ -54,8 +54,24 @@ def execute(query: str, callbacks=None):
             return chain.invoke(query)
     
     if route == Route.META:
-        # return system information when asked about the system
-        return CORTEX_SYSTEM_PROMPT
+        # generate natural response about the system using the system prompt as context
+        llm = get_llm(streaming=True, callbacks=callbacks)
+        meta_prompt = f"""Based on this system information:
+            {CORTEX_SYSTEM_PROMPT}
+
+            Answer the user's question naturally and conversationally.
+            Don't just repeat the information verbatim - explain it in a friendly, helpful way.
+
+            User: {query}
+            Assistant:"""
+        
+        if callbacks:
+            result_chunks = []
+            for chunk in llm.stream(meta_prompt):
+                result_chunks.append(chunk)
+            return "".join(result_chunks)
+        else:
+            return llm.invoke(meta_prompt)
     
     # CHAT route
     llm = get_llm(streaming=True, callbacks=callbacks)
