@@ -1,86 +1,71 @@
 from enum import Enum
+from typing import Tuple
 
 from cortex.llm import get_llm
-from cortex.query import run_rag
-from cortex.persona import CORTEX_SYSTEM_PROMPT
+from cortex.query import run_rag, run_meta, run_chat
+
 
 class Route(Enum):
     RAG = "rag"
     CHAT = "chat"
     META = "meta"
 
-ROUTER_PROMPT = """
-Classify the user query into ONE of the following categories:
+
+ROUTER_PROMPT = """Classify the user query into ONE of the following categories:
 
 - RAG: User is asking for specific information that would be found in documents 
-  (e.g., "what does the report say about sales?", "find information about X")
+  (e.g., "what does the report say about sales?", "find information about X", "summarize the document")
+
 - META: User is asking about the system itself, its capabilities, configuration, or technical details
   (e.g., "what can you do?", "how do you work?", "what are your features?", "tell me about yourself as a system")
+
 - CHAT: General conversation, greetings, reasoning, explanations that don't need documents
-  (e.g., "hi", "explain quantum physics", "help me code", "what's the weather like")
+  (e.g., "hi", "explain quantum physics", "help me code", "what do you think about X")
 
 Query: "{query}"
 
-Respond with only ONE word: RAG, META, or CHAT.
-"""
+Respond with only ONE word: RAG, META, or CHAT."""
+
 
 def route_query(query: str) -> Route:
-    """classify query and return appropriate route"""
+    """Classify query and return appropriate route."""
     llm = get_llm()
-    result = llm.invoke(
-        ROUTER_PROMPT.format(query=query)
-    ).strip().upper()
+    result = llm.invoke(ROUTER_PROMPT.format(query=query)).strip().upper()
 
     if "RAG" in result:
         return Route.RAG
     elif "META" in result:
         return Route.META
-    return Route.CHAT   # default to chat for safety
+    return Route.CHAT
 
-def execute(query: str, callbacks=None):
-    """execute query based on routing decision"""
+
+def execute(query: str, callbacks=None) -> Tuple[str, Route]:
+    """
+    Execute query based on routing decision.
+    
+    Args:
+        query: User's question/message
+        callbacks: Optional callbacks for streaming
+    
+    Returns:
+        tuple: (result_string, route) where route is the Route enum used
+    """
     route = route_query(query)
 
     if route == Route.RAG:
-        # use run_rag from query.py which handles retrieval and chain execution
         result = run_rag(query, callbacks=callbacks)
         
-        # if no documents found, fall back to CHAT
+        # If no documents found, fall back to CHAT
         if result is None:
             route = Route.CHAT
-        else:
-            return result
-    
-    if route == Route.META:
-        # generate natural response about the system using the system prompt as context
-        llm = get_llm(streaming=True, callbacks=callbacks)
-        meta_prompt = f"""Based on this system information:
-            {CORTEX_SYSTEM_PROMPT}
-
-            Answer the user's question naturally and conversationally.
-            Don't just repeat the information verbatim - explain it in a friendly, helpful way.
-
-            User: {query}
-            Assistant:"""
+            result = run_chat(query, callbacks=callbacks)
         
-        if callbacks:
-            result_chunks = []
-            for chunk in llm.stream(meta_prompt):
-                result_chunks.append(chunk)
-            return "".join(result_chunks)
-        else:
-            return llm.invoke(meta_prompt)
+        return result, route
     
-    # CHAT route
-    llm = get_llm(streaming=True, callbacks=callbacks)
-    full_prompt = f"{CORTEX_SYSTEM_PROMPT}\n\nUser: {query}\nAssistant:"
+    elif route == Route.META:
+        result = run_meta(query, callbacks=callbacks)
+        return result, route
     
-    if callbacks:
-        # use streaming when callbacks are provided
-        # callbacks are already attached to the llm
-        result_chunks = []
-        for chunk in llm.stream(full_prompt):
-            result_chunks.append(chunk)
-        return "".join(result_chunks)
-    else:
-        return llm.invoke(full_prompt)
+    else:  # Route.CHAT
+        result = run_chat(query, callbacks=callbacks)
+        return result, route
