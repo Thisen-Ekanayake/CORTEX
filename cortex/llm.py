@@ -1,5 +1,5 @@
 import torch
-from langchain_community.llms import LlamaCpp
+from langchain_community.llms.llamacpp import LlamaCpp
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
 

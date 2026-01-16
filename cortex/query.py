@@ -1,4 +1,4 @@
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
 from langchain_chroma import Chroma
 from langchain_core.output_parsers import StrOutputParser
@@ -7,6 +7,7 @@ from langchain_core.runnables import RunnableLambda, RunnablePassthrough
 
 from cortex.embeddings import get_embeddings
 from cortex.llm import get_llm
+from cortex.persona import CORTEX_SYSTEM_PROMPT
 
 PERSIST_DIR = "chroma_db"
 
@@ -86,8 +87,6 @@ Question:
 """
     )
 
-    # Create a runnable that retrieves and formats documents
-    # Use retrieve_docs which now uses vectorstore directly
     def retrieve_and_format(query: str) -> str:
         docs = retrieve_docs(query)
         return format_docs(docs)
@@ -109,12 +108,12 @@ Question:
 
 
 # -------------------------
-# Public API
+# RAG execution
 # -------------------------
 def run_rag(query: str, callbacks=None) -> Optional[str]:
     """
     Executes RAG only if relevant documents exist.
-    Returns None if RAG should NOT be used.
+    Returns None if no relevant docs found.
     """
     docs = retrieve_docs(query)
 
@@ -134,7 +133,7 @@ def run_rag(query: str, callbacks=None) -> Optional[str]:
 
 def get_sources(query: str) -> List[str]:
     """
-    Explicit source retrieval (only call after RAG ran).
+    Get source citations for retrieved documents.
     """
     docs = retrieve_docs(query)
     sources = []
@@ -145,3 +144,57 @@ def get_sources(query: str) -> List[str]:
         sources.append(f"{source}, page {page}")
 
     return sources
+
+
+# -------------------------
+# META execution
+# -------------------------
+def run_meta(query: str, callbacks=None) -> str:
+    """
+    Answer questions about the system using persona information.
+    Generates natural responses based on CORTEX_SYSTEM_PROMPT.
+    """
+    llm = get_llm(streaming=True, callbacks=callbacks)
+    
+    meta_prompt = f"""Based on this system information:
+
+{CORTEX_SYSTEM_PROMPT}
+
+Answer the user's question naturally and conversationally.
+Don't just repeat the information verbatim - explain it in a friendly, helpful way.
+Be concise but informative.
+
+User: {query}
+Assistant:"""
+    
+    if callbacks:
+        chunks = []
+        for chunk in llm.stream(meta_prompt):
+            chunks.append(chunk)
+        return "".join(chunks)
+    
+    return llm.invoke(meta_prompt)
+
+
+# -------------------------
+# CHAT execution
+# -------------------------
+def run_chat(query: str, callbacks=None) -> str:
+    """
+    Handle general conversation without document retrieval.
+    """
+    llm = get_llm(streaming=True, callbacks=callbacks)
+    
+    # Include system prompt for context about the assistant's identity
+    chat_prompt = f"""{CORTEX_SYSTEM_PROMPT}
+
+User: {query}
+Assistant:"""
+    
+    if callbacks:
+        chunks = []
+        for chunk in llm.stream(chat_prompt):
+            chunks.append(chunk)
+        return "".join(chunks)
+    
+    return llm.invoke(chat_prompt)
