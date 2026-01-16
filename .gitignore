@@ -6,6 +6,7 @@ dataset/
 data/
 .lang_venv/
 youtube/
+wandb/
 
 *.odt
 *.txt
