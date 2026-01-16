@@ -1,9 +1,12 @@
 __pycache__/
 chroma_db/
 models/
+model/
+dataset/
 data/
 .lang_venv/
 youtube/
+wandb/
 
 *.odt
 *.txt

@@ -15,3 +15,6 @@ prompt-toolkit
 # YouTube
 yt_dlp
 pydub
+
+# Visualization
+wandb
