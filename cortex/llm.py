@@ -8,7 +8,7 @@ def get_llm(streaming=False, callbacks=None, cpu_fallback=True):
 
     if gpu_available:
         return LlamaCpp(
-            model_path="models/qwen2.5-1.5b-instruct-q4_0.gguf",
+            model_path="models/Qwen2.5-1.5B_Instruct/qwen2.5-1.5b-instruct-q4_0.gguf",
             n_ctx=32768,
             n_batch=64,
             max_tokens=512,
