@@ -7,11 +7,14 @@ data/
 .lang_venv/
 youtube/
 wandb/
+rl_feedback/
 
 *.odt
 *.txt
 *.pdf
 *.log
+*.json
+*.jsonl
 
 .env
 
