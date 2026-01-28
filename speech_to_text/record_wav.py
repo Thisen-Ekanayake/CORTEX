@@ -1,50 +1,80 @@
-import argparse
-import sys
-import wave
-
-import numpy as np
 import sounddevice as sd
+import numpy as np
+import wave
+import threading
+import queue
+import sys
+
+SAMPLE_RATE = 44100
+CHANNELS = 1
+OUTPUT_FILE = "recording_1.wav"
+
+audio_queue = queue.Queue()
+recording = False
 
 
-def record_wav(duration_s: float, out_path: str, sample_rate: int, channels: int) -> None:
-    if duration_s <= 0:
-        raise ValueError("Duration must be > 0 seconds.")
-    if sample_rate <= 0:
-        raise ValueError("Sample rate must be a positive integer.")
-    if channels not in (1, 2):
-        raise ValueError("Channels must be 1 (mono) or 2 (stereo).")
+def audio_callback(indata, frames, time, status):
+    if status:
+        print(status, file=sys.stderr)
+    if recording:
+        audio_queue.put(indata.copy())
 
-    frames = int(round(duration_s * sample_rate))
 
-    print(f"Recording {duration_s:.2f}s @ {sample_rate} Hz, {channels} channel(s)...")
-    audio = sd.rec(frames, samplerate=sample_rate, channels=channels, dtype="int16")
-    sd.wait()
-    print("Recording finished. Saving...")
+def save_wav(filename, audio_data, samplerate, channels):
+    audio_np = np.concatenate(audio_data, axis=0)
+    audio_int16 = np.int16(audio_np * 32767)
 
-    # audio is shape (frames, channels) int16
-    with wave.open(out_path, "wb") as wf:
+    with wave.open(filename, "wb") as wf:
         wf.setnchannels(channels)
-        wf.setsampwidth(2)  # 2 bytes for int16
-        wf.setframerate(sample_rate)
-        wf.writeframes(audio.tobytes())
-
-    print(f"Saved: {out_path}")
+        wf.setsampwidth(2)  # int16
+        wf.setframerate(samplerate)
+        wf.writeframes(audio_int16.tobytes())
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("seconds", type=float, help="Recording duration in seconds (e.g., 5 or 2.5)")
-    parser.add_argument("--out", default="recording.wav", help="Output WAV filename")
-    parser.add_argument("--rate", type=int, default=44100, help="Sample rate (Hz), default 44100")
-    parser.add_argument("--channels", type=int, default=1, help="1=mono, 2=stereo (default 1)")
-    args = parser.parse_args()
+    global recording
 
-    try:
-        record_wav(args.seconds, args.out, args.rate, args.channels)
-    except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
+    print("🎧 Audio Recorder")
+    print("r + Enter → start recording")
+    print("s + Enter → stop & save")
+    print("Ctrl+C → exit\n")
+
+    recorded_chunks = []
+
+    with sd.InputStream(
+        samplerate=SAMPLE_RATE,
+        channels=CHANNELS,
+        callback=audio_callback,
+    ):
+        while True:
+            cmd = input("> ").strip().lower()
+
+            if cmd == "r" and not recording:
+                print("🔴 Recording started...")
+                recorded_chunks.clear()
+                recording = True
+
+            elif cmd == "s" and recording:
+                print("🛑 Recording stopped. Saving...")
+                recording = False
+
+                while not audio_queue.empty():
+                    recorded_chunks.append(audio_queue.get())
+
+                save_wav(
+                    OUTPUT_FILE,
+                    recorded_chunks,
+                    SAMPLE_RATE,
+                    CHANNELS,
+                )
+                print(f"✅ Saved as {OUTPUT_FILE}\n")
+
+            else:
+                print("ℹ️ Press 'r' to record, 's' to stop")
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n👋 Exiting.")
