@@ -4,6 +4,8 @@ models/
 model/
 dataset/
 data/
+.venv/
+.vl_venv/
 .lang_venv/
 .tts/
 youtube/
