@@ -15,6 +15,7 @@ rl_feedback/
 *.log
 *.json
 *.jsonl
+*.wav
 
 .env
 

@@ -18,3 +18,7 @@ pydub
 
 # Visualization
 wandb
+
+# STT
+sounddevice
+pynput
