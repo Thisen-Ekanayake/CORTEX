@@ -1,24 +1,33 @@
-langchain 
-langchain-community 
-langchain-text-splitters 
-chromadb 
-sentence-transformers 
-pypdf 
-python-docx 
-llama-cpp-python
+# LangChain Core and Extensions
+langchain==1.2.7
+langchain-community==0.4.1
+langchain-text-splitters==1.1.0
+langchain-chroma==1.1.0
+langchain-huggingface==1.2.0
 
-# UI
-textual
-rich
-prompt-toolkit
+# Vector Database and Embeddings
+chromadb==1.4.1
+sentence-transformers==5.2.2
 
-# YouTube
-yt_dlp
-pydub
+# Document Processing
+pypdf==6.6.2
+python-docx==1.2.0
 
-# Visualization
-wandb
+# LLM Backend
+llama-cpp-python==0.3.16
 
-# STT
-sounddevice
-pynput
+# UI Libraries
+textual==7.4.0
+rich==14.3.1
+prompt-toolkit==3.0.52
+
+# YouTube Processing
+yt_dlp==2025.12.8
+pydub==0.25.1
+
+# Visualization and Monitoring
+wandb==0.24.0
+
+# Audio Processing
+sounddevice==0.5.5
+pynput==1.8.1
