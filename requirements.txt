@@ -31,3 +31,6 @@ wandb==0.24.0
 # Audio Processing
 sounddevice==0.5.5
 pynput==1.8.1
+
+# Image Search
+google-images-search==1.4.7
