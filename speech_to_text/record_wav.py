@@ -1,8 +1,9 @@
-#!/usr/bin/env python3
 """
 Interactive audio recorder.
-- Press 'r' + Enter to start recording
-- Press 's' + Enter to stop and save as WAV (timestamped filename)
+r + Enter → start recording
+p + Enter → pause
+k + Enter → resume
+s + Enter → stop & save (timestamped WAV)
 """
 
 import sounddevice as sd
@@ -17,12 +18,14 @@ CHANNELS = 1
 
 audio_queue = queue.Queue()
 recording = False
+paused = False
 
 
 def audio_callback(indata, frames, time, status):
     if status:
         print(status, file=sys.stderr)
-    if recording:
+
+    if recording and not paused:
         audio_queue.put(indata.copy())
 
 
@@ -42,11 +45,10 @@ def timestamp_filename():
 
 
 def main():
-    global recording
+    global recording, paused
 
     print("🎧 Audio Recorder")
-    print("r + Enter → start recording")
-    print("s + Enter → stop & save")
+    print("r → start | p → pause | k → resume | s → stop & save")
     print("Ctrl+C → exit\n")
 
     recorded_chunks = []
@@ -60,30 +62,39 @@ def main():
             cmd = input("> ").strip().lower()
 
             if cmd == "r" and not recording:
-                print("🔴 Recording started...")
+                print("🔴 Recording started")
                 recorded_chunks.clear()
                 while not audio_queue.empty():
                     audio_queue.get()
                 recording = True
+                paused = False
+
+            elif cmd == "p" and recording and not paused:
+                paused = True
+                print("⏸️ Recording paused")
+
+            elif cmd == "k" and recording and paused:
+                paused = False
+                print("▶️ Recording resumed")
 
             elif cmd == "s" and recording:
                 print("🛑 Recording stopped. Saving...")
                 recording = False
+                paused = False
 
                 while not audio_queue.empty():
                     recorded_chunks.append(audio_queue.get())
 
+                if not recorded_chunks:
+                    print("⚠️ No audio captured\n")
+                    continue
+
                 filename = timestamp_filename()
-                save_wav(
-                    filename,
-                    recorded_chunks,
-                    SAMPLE_RATE,
-                    CHANNELS,
-                )
+                save_wav(filename, recorded_chunks, SAMPLE_RATE, CHANNELS)
                 print(f"✅ Saved as {filename}\n")
 
             else:
-                print("ℹ️ Press 'r' to record, 's' to stop")
+                print("ℹ️ r=start | p=pause | k=resume | s=stop")
 
 
 if __name__ == "__main__":
