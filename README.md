@@ -14,6 +14,7 @@ CORTEX is an AI assistant that combines document retrieval with language models 
 - **Streaming Responses**: Real-time token streaming for responsive user experience
 - **Conversation Memory**: Maintains context of recent interactions
 - **Multiple Interfaces**: Rich interactive CLI, minimal CLI, and RL training interface
+- **Multimodal Tools**: Image search, speech-to-text, text-to-speech, and vision-language reasoning utilities
 
 ## Architecture
 
@@ -30,7 +31,7 @@ CORTEX is an AI assistant that combines document retrieval with language models 
 - **`memory.py`**: Conversation history management
 - **`persona.py`**: System prompt defining CORTEX's identity and behavior
 - **`streaming.py`**: Token streaming handler for real-time output
-
+ 
 ### User Interfaces
 
 - **`ui.py`**: Rich interactive CLI with logo, commands, and streaming display
@@ -43,6 +44,21 @@ CORTEX is an AI assistant that combines document retrieval with language models 
 - **`rl_router.py`**: RL router that learns from user feedback to adjust confidence weights
 - Uses Q-learning style updates to improve routing accuracy
 - Persists feedback and metrics for continuous learning
+
+### Extended Tools
+
+- **Image Search (`image_search/`)**
+  - `realtime_retrieval.py`: Hybrid Google + CLIP pipeline that fetches web images, caches them locally, and re-ranks results with CLIP for semantically relevant matches.
+  - `clip_retrieval_local.py`: Index and retrieve images from a local folder using CLIP embeddings.
+  - `google_search.py`: Fetch raw image URLs from Google Images for a given text query.
+- **Speech-to-Text (`speech_to_text/`)**
+  - `record_and_transcribe.py`: One-shot recording and transcription pipeline using a local Parakeet ASR `.nemo` model (GPU recommended).
+  - `audio_recorder.py`: Utility for recording microphone audio to WAV.
+- **Text-to-Speech (`text_to_speech/`)**
+  - `text_to_speech.py`: `TextToSpeech` wrapper around Coqui TTS with file synthesis and local playback helpers.
+  - `testing.py`: Minimal example that synthesizes a sample sentence to `logs/output.wav`.
+- **Vision-Language Inference (`vl_inference.py`)**
+  - Qwen2.5-VL-3B-based script for image understanding and image+text question answering with 4-bit quantization for efficient GPU usage.
 
 ## Usage
 
@@ -66,6 +82,15 @@ python -m cortex.rl_cli
 
 # View RL dashboard
 python -m cortex.rl_dashboard
+ 
+# Hybrid image search (Google + CLIP)
+python image_search/realtime_retrieval.py --prompt "a golden retriever playing in a park"
+
+# Record audio and transcribe to text (speech-to-text)
+python speech_to_text/record_and_transcribe.py
+
+# Simple text-to-speech test (writes WAV file)
+python text_to_speech/testing.py
 ```
 
 ### Query Routing
