@@ -1,12 +1,15 @@
 import nemo.collections.asr as nemo_asr
 
-asr_model = nemo_asr.models.ASRModel.restore_from(
-    restore_path="models/Parakeet-tdt-0.6b-v3/parakeet-tdt-0.6b-v3.nemo",
-    map_location="cuda"
-)
 
-output = asr_model.transcribe(
-    ["recording.wav"]
-)
+class ParakeetASR:
+    def __init__(self, model_path: str, device: str = "cuda"):
+        print(f"🔊 Loading Parakeet model from {model_path}")
+        self.model = nemo_asr.models.ASRModel.restore_from(
+            restore_path=model_path,
+            map_location=device,
+        )
+        self.model.eval()
 
-print(output[0].text)
+    def transcribe(self, wav_path: str) -> str:
+        output = self.model.transcribe([wav_path])
+        return output[0].text
