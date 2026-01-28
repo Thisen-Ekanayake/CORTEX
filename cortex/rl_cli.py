@@ -4,9 +4,11 @@ User selects the actual category while the model learns from feedback.
 """
 
 from typing import Dict, Optional
+
 from cortex.router import Route, execute
 from cortex.streaming import StreamHandler
 from cortex.rl_router import get_rl_router, RLRouter
+from text_to_speech.text_to_speech import TextToSpeech
 
 
 # ANSI color codes
@@ -25,6 +27,9 @@ ROUTE_COLORS = {
     Route.META: YELLOW,
     Route.CHAT: GREEN,
 }
+
+# Lazy-initialized global TTS engine for RL CLI
+_tts_engine: TextToSpeech | None = None
 
 
 def print_header():
@@ -224,16 +229,36 @@ def print_statistics(rl_router: RLRouter):
 
 
 def execute_with_streaming(query: str, route: Route) -> str:
-    """Execute query with streaming output."""
+    """Execute query with streaming output and speak final answer."""
     print(f"\n{BOLD}{ROUTE_COLORS[route]}[{route.value.upper()}]{RESET} ", end="", flush=True)
-    
+
+    buffer = []
+
     def on_token(token: str):
+        buffer.append(token)
         print(token, end="", flush=True)
-    
+
     handler = StreamHandler(on_token=on_token)
     result, _, _ = execute(query, callbacks=[handler])
-    
+
     print("\n")  # New line after streaming
+
+    # Use the full text we actually streamed (result may already be that, but
+    # we rely on the assembled buffer to be consistent with what user saw).
+    final_text = "".join(buffer) or (result or "")
+
+    if final_text.strip():
+        try:
+            global _tts_engine
+            if _tts_engine is None:
+                _tts_engine = TextToSpeech()
+            _tts_engine.speak_and_play(
+                final_text,
+                file_path="logs/output.wav",
+            )
+        except Exception as e:
+            print(f"{RED}TTS error: {e}{RESET}")
+
     return result
 
 
