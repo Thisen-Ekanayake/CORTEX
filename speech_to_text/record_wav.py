@@ -1,11 +1,3 @@
-"""
-Interactive audio recorder.
-r + Enter → start recording
-p + Enter → pause
-k + Enter → resume
-s + Enter → stop & save (timestamped WAV)
-"""
-
 import sounddevice as sd
 import numpy as np
 import wave
@@ -13,92 +5,88 @@ import queue
 import sys
 from datetime import datetime
 
-SAMPLE_RATE = 44100
-CHANNELS = 1
 
-audio_queue = queue.Queue()
-recording = False
-paused = False
+class AudioRecorder:
+    def __init__(self, sample_rate=44100, channels=1):
+        self.sample_rate = sample_rate
+        self.channels = channels
 
+        self.audio_queue = queue.Queue()
+        self.recording = False
+        self.paused = False
 
-def audio_callback(indata, frames, time, status):
-    if status:
-        print(status, file=sys.stderr)
+    # ---------- Audio ----------
 
-    if recording and not paused:
-        audio_queue.put(indata.copy())
+    def _audio_callback(self, indata, frames, time_info, status):
+        if status:
+            print(status, file=sys.stderr)
 
+        if self.recording and not self.paused:
+            self.audio_queue.put(indata.copy())
 
-def save_wav(filename, audio_data, samplerate, channels):
-    audio_np = np.concatenate(audio_data, axis=0)
-    audio_int16 = np.int16(audio_np * 32767)
+    def _timestamp_filename(self):
+        return datetime.now().strftime("%Y%m%d_%H%M%S.wav")
 
-    with wave.open(filename, "wb") as wf:
-        wf.setnchannels(channels)
-        wf.setsampwidth(2)  # int16
-        wf.setframerate(samplerate)
-        wf.writeframes(audio_int16.tobytes())
+    def _save_wav(self, filename, chunks):
+        audio = np.concatenate(chunks, axis=0)
+        audio = np.int16(audio * 32767)
 
+        with wave.open(filename, "wb") as wf:
+            wf.setnchannels(self.channels)
+            wf.setsampwidth(2)
+            wf.setframerate(self.sample_rate)
+            wf.writeframes(audio.tobytes())
 
-def timestamp_filename():
-    return datetime.now().strftime("%Y%m%d_%H%M%S.wav")
+    # ---------- Public API ----------
 
+    def run(self):
+        print("🎧 Audio Recorder")
+        print("r → start | p → pause | k → resume | s → stop & save")
+        print("Ctrl+C → exit\n")
 
-def main():
-    global recording, paused
+        recorded_chunks = []
 
-    print("🎧 Audio Recorder")
-    print("r → start | p → pause | k → resume | s → stop & save")
-    print("Ctrl+C → exit\n")
+        with sd.InputStream(
+            samplerate=self.sample_rate,
+            channels=self.channels,
+            callback=self._audio_callback,
+        ):
+            while True:
+                cmd = input("> ").strip().lower()
 
-    recorded_chunks = []
+                if cmd == "r" and not self.recording:
+                    print("🔴 Recording started")
+                    recorded_chunks.clear()
+                    while not self.audio_queue.empty():
+                        self.audio_queue.get()
+                    self.recording = True
+                    self.paused = False
 
-    with sd.InputStream(
-        samplerate=SAMPLE_RATE,
-        channels=CHANNELS,
-        callback=audio_callback,
-    ):
-        while True:
-            cmd = input("> ").strip().lower()
+                elif cmd == "p" and self.recording and not self.paused:
+                    self.paused = True
+                    print("⏸️ Recording paused")
 
-            if cmd == "r" and not recording:
-                print("🔴 Recording started")
-                recorded_chunks.clear()
-                while not audio_queue.empty():
-                    audio_queue.get()
-                recording = True
-                paused = False
+                elif cmd == "k" and self.recording and self.paused:
+                    self.paused = False
+                    print("▶️ Recording resumed")
 
-            elif cmd == "p" and recording and not paused:
-                paused = True
-                print("⏸️ Recording paused")
+                elif cmd == "s" and self.recording:
+                    print("🛑 Recording stopped. Saving...")
+                    self.recording = False
+                    self.paused = False
 
-            elif cmd == "k" and recording and paused:
-                paused = False
-                print("▶️ Recording resumed")
+                    while not self.audio_queue.empty():
+                        recorded_chunks.append(self.audio_queue.get())
 
-            elif cmd == "s" and recording:
-                print("🛑 Recording stopped. Saving...")
-                recording = False
-                paused = False
+                    if not recorded_chunks:
+                        print("⚠️ No audio captured\n")
+                        continue
 
-                while not audio_queue.empty():
-                    recorded_chunks.append(audio_queue.get())
+                    filename = self._timestamp_filename()
+                    self._save_wav(filename, recorded_chunks)
+                    print(f"✅ Saved as {filename}\n")
 
-                if not recorded_chunks:
-                    print("⚠️ No audio captured\n")
-                    continue
+                    return filename  # IMPORTANT: return saved file
 
-                filename = timestamp_filename()
-                save_wav(filename, recorded_chunks, SAMPLE_RATE, CHANNELS)
-                print(f"✅ Saved as {filename}\n")
-
-            else:
-                print("ℹ️ r=start | p=pause | k=resume | s=stop")
-
-
-if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        print("\n👋 Exiting.")
+                else:
+                    print("ℹ️ r=start | p=pause | k=resume | s=stop")
