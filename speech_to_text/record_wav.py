@@ -1,13 +1,19 @@
+#!/usr/bin/env python3
+"""
+Interactive audio recorder.
+- Press 'r' + Enter to start recording
+- Press 's' + Enter to stop and save as WAV (timestamped filename)
+"""
+
 import sounddevice as sd
 import numpy as np
 import wave
-import threading
 import queue
 import sys
+from datetime import datetime
 
 SAMPLE_RATE = 44100
 CHANNELS = 1
-OUTPUT_FILE = "recording_1.wav"
 
 audio_queue = queue.Queue()
 recording = False
@@ -31,6 +37,10 @@ def save_wav(filename, audio_data, samplerate, channels):
         wf.writeframes(audio_int16.tobytes())
 
 
+def timestamp_filename():
+    return datetime.now().strftime("%Y%m%d_%H%M%S.wav")
+
+
 def main():
     global recording
 
@@ -52,6 +62,8 @@ def main():
             if cmd == "r" and not recording:
                 print("🔴 Recording started...")
                 recorded_chunks.clear()
+                while not audio_queue.empty():
+                    audio_queue.get()
                 recording = True
 
             elif cmd == "s" and recording:
@@ -61,13 +73,14 @@ def main():
                 while not audio_queue.empty():
                     recorded_chunks.append(audio_queue.get())
 
+                filename = timestamp_filename()
                 save_wav(
-                    OUTPUT_FILE,
+                    filename,
                     recorded_chunks,
                     SAMPLE_RATE,
                     CHANNELS,
                 )
-                print(f"✅ Saved as {OUTPUT_FILE}\n")
+                print(f"✅ Saved as {filename}\n")
 
             else:
                 print("ℹ️ Press 'r' to record, 's' to stop")
