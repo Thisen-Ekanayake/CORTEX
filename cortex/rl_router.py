@@ -65,17 +65,12 @@ class RLRouter:
         self.total_predictions = 0
         self.correct_predictions = 0
         self.route_accuracy = {
-            Route.RAG.value: {"correct": 0, "total": 0},
-            Route.META.value: {"correct": 0, "total": 0},
-            Route.CHAT.value: {"correct": 0, "total": 0},
+            route.value: {"correct": 0, "total": 0}
+            for route in Route
         }
         
         # Confidence adjustment weights (learned from feedback)
-        self.confidence_weights = {
-            Route.RAG.value: 1.0,
-            Route.META.value: 1.0,
-            Route.CHAT.value: 1.0,
-        }
+        self.confidence_weights = {route.value: 1.0 for route in Route}
         
         # Load existing feedback and metrics
         self._load_feedback()
@@ -205,6 +200,9 @@ class RLRouter:
             self.correct_predictions += 1
         
         # Update per-route accuracy
+        if feedback.actual_route not in self.route_accuracy:
+            # Backwards/forwards compatibility if route set changes
+            self.route_accuracy[feedback.actual_route] = {"correct": 0, "total": 0}
         route_stats = self.route_accuracy[feedback.actual_route]
         route_stats["total"] += 1
         if feedback.correct:
@@ -316,18 +314,10 @@ class RLRouter:
     
     def reset_learning(self):
         """Reset all learning (weights back to 1.0, clear metrics)."""
-        self.confidence_weights = {
-            Route.RAG.value: 1.0,
-            Route.META.value: 1.0,
-            Route.CHAT.value: 1.0,
-        }
+        self.confidence_weights = {route.value: 1.0 for route in Route}
         self.total_predictions = 0
         self.correct_predictions = 0
-        self.route_accuracy = {
-            Route.RAG.value: {"correct": 0, "total": 0},
-            Route.META.value: {"correct": 0, "total": 0},
-            Route.CHAT.value: {"correct": 0, "total": 0},
-        }
+        self.route_accuracy = {route.value: {"correct": 0, "total": 0} for route in Route}
         self._save_metrics()
 
 

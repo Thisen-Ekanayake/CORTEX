@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple
+from typing import List, Optional, Literal
 
 from langchain_chroma import Chroma
 from langchain_core.output_parsers import StrOutputParser
@@ -115,13 +115,48 @@ def run_rag(query: str, callbacks=None) -> Optional[str]:
     Executes RAG only if relevant documents exist.
     Returns None if no relevant docs found.
     """
-    docs = retrieve_docs(query)
+    return run_rag_mode(query=query, mode="document", callbacks=callbacks)
 
+
+def run_rag_mode(
+    query: str,
+    mode: Literal["document", "image"] = "document",
+    callbacks=None,
+) -> Optional[str]:
+    """
+    Execute RAG using either:
+    - mode="document": vector DB retrieval + LLM answer grounded in text context
+    - mode="image": image retrieval (best-effort) returning top matches
+
+    Returns None when no relevant results are available for the chosen mode.
+    """
+    if mode == "image":
+        # Best-effort image retrieval integration. This returns a textual list of
+        # retrieved images (paths) and similarity scores.
+        try:
+            from image_search.realtime_retrieval import search_and_retrieve
+        except Exception:
+            return None
+
+        try:
+            results = search_and_retrieve(query, num_images=10, top_k=5)
+        except Exception:
+            return None
+
+        if not results:
+            return None
+
+        lines = ["Top image matches:"]
+        for path, score in results:
+            lines.append(f"- {path} (score: {score:.3f})")
+        return "\n".join(lines)
+
+    # Default: document RAG
+    docs = retrieve_docs(query)
     if not docs:
         return None
 
     chain = get_rag_chain(callbacks=callbacks)
-
     if callbacks:
         chunks = []
         for chunk in chain.stream(query):

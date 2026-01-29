@@ -24,6 +24,8 @@ MAGENTA = "\033[95m"
 
 ROUTE_COLORS = {
     Route.RAG: BLUE,
+    Route.RAG_DOC: BLUE,
+    Route.RAG_IMG: MAGENTA,
     Route.META: YELLOW,
     Route.CHAT: GREEN,
 }
@@ -97,25 +99,28 @@ def get_user_category_selection() -> Optional[Route]:
         Selected Route or None if cancelled
     """
     print(f"{BOLD}Select the ACTUAL category for this query:{RESET}")
-    print(f"  {BLUE}[1]{RESET} RAG     - Retrieve from documents")
-    print(f"  {YELLOW}[2]{RESET} META    - About the system")
-    print(f"  {GREEN}[3]{RESET} CHAT    - General conversation")
+    print(f"  {BLUE}[1]{RESET} RAG_DOC - Retrieve from documents")
+    print(f"  {MAGENTA}[2]{RESET} RAG_IMG - Retrieve images")
+    print(f"  {YELLOW}[3]{RESET} META    - About the system")
+    print(f"  {GREEN}[4]{RESET} CHAT    - General conversation")
     print(f"  {DIM}[0]{RESET} {DIM}Cancel{RESET}")
     
     while True:
         try:
-            choice = input(f"\n{BOLD}Your choice [1-3, 0 to cancel]:{RESET} ").strip()
+            choice = input(f"\n{BOLD}Your choice [1-4, 0 to cancel]:{RESET} ").strip()
             
             if choice == "0":
                 return None
             elif choice == "1":
-                return Route.RAG
+                return Route.RAG_DOC
             elif choice == "2":
-                return Route.META
+                return Route.RAG_IMG
             elif choice == "3":
+                return Route.META
+            elif choice == "4":
                 return Route.CHAT
             else:
-                print(f"{RED}Invalid choice. Please enter 1, 2, 3, or 0.{RESET}")
+                print(f"{RED}Invalid choice. Please enter 1, 2, 3, 4, or 0.{RESET}")
         except (KeyboardInterrupt, EOFError):
             return None
 
@@ -193,8 +198,8 @@ def print_statistics(rl_router: RLRouter):
     print(f"{CYAN}│{RESET} {BOLD}Per-Category Performance:{RESET}")
     route_metrics = metrics["route_accuracy"]
     
-    for route_name in ["rag", "meta", "chat"]:
-        stats = route_metrics[route_name]
+    for route_name in ["rag", "rag_doc", "rag_img", "meta", "chat"]:
+        stats = route_metrics.get(route_name, {"accuracy": 0.0, "total": 0, "correct": 0})
         acc = stats["accuracy"]
         route = Route(route_name)
         color = ROUTE_COLORS[route]
@@ -208,8 +213,8 @@ def print_statistics(rl_router: RLRouter):
     # Confidence weights (learned adjustments)
     print(f"{CYAN}│{RESET} {BOLD}Learned Confidence Weights:{RESET}")
     weights = metrics["confidence_weights"]
-    for route_name in ["rag", "meta", "chat"]:
-        weight = weights[route_name]
+    for route_name in ["rag", "rag_doc", "rag_img", "meta", "chat"]:
+        weight = weights.get(route_name, 1.0)
         route = Route(route_name)
         color = ROUTE_COLORS[route]
         
