@@ -3,7 +3,7 @@ import joblib
 from enum import Enum
 from typing import Tuple, Dict
 
-from cortex.query import run_rag, run_meta, run_chat
+from cortex.query import run_rag, run_meta, run_chat, run_rag_mode
 
 
 class Route(Enum):
@@ -113,10 +113,10 @@ def execute(
 
         # ---- Sub-routing inside RAG ----
         if predicted_route == Route.RAG_IMG:
-            result = run_rag(query, callbacks=callbacks, mode="image")
+            result = run_rag_mode(query, callbacks=callbacks, mode="image")
         else:
             # rag or rag_doc
-            result = run_rag(query, callbacks=callbacks, mode="document")
+            result = run_rag_mode(query, callbacks=callbacks, mode="document")
 
         if result is None:
             result = run_chat(query, callbacks=callbacks)
