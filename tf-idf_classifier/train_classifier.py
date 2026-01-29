@@ -21,6 +21,23 @@ LABEL_MAP = {
 LABEL_NAMES = {v: k for k, v in LABEL_MAP.items()}
 
 def load_data(data_dir, require_all_files=False):
+    """
+    Load training data from text files in the data directory.
+    
+    Expects files named after labels (e.g., chat.txt, meta.txt, rag_doc.txt).
+    Each line in a file becomes one training sample with that label.
+    
+    Args:
+        data_dir: Directory containing label-named .txt files.
+        require_all_files: If True, raise error if any label file is missing (default: False).
+    
+    Returns:
+        tuple: (texts, labels) where texts is list of strings and labels is list of ints.
+    
+    Raises:
+        FileNotFoundError: If require_all_files=True and files are missing.
+        ValueError: If no training data is found.
+    """
     texts, labels = [], []
 
     missing = []
@@ -46,6 +63,21 @@ def load_data(data_dir, require_all_files=False):
     return texts, labels
 
 def log_metrics(y_true, y_pred, split_name, step=None):
+    """
+    Log classification metrics to Weights & Biases.
+    
+    Computes and logs accuracy, precision, recall, F1 (weighted and per-class),
+    and confusion matrix for the given predictions.
+    
+    Args:
+        y_true: True labels (array-like).
+        y_pred: Predicted labels (array-like).
+        split_name: Name prefix for metrics (e.g., "train", "val", "test").
+        step: Optional step number for logging (default: None).
+    
+    Returns:
+        tuple: (accuracy, f1_score) weighted metrics.
+    """
     acc = accuracy_score(y_true, y_pred)
     precision, recall, f1, _ = precision_recall_fscore_support(
         y_true, y_pred, average="weighted", zero_division=0
@@ -82,6 +114,23 @@ def log_metrics(y_true, y_pred, split_name, step=None):
     return acc, f1
 
 def train_and_save(data_dir, out_dir="model", test_size=0.2, val_size=0.1, random_seed=42):
+    """
+    Train TF-IDF + Logistic Regression classifier and save models.
+    
+    Complete training pipeline:
+    1. Loads data from text files
+    2. Splits into train/val/test sets
+    3. Trains TF-IDF vectorizer and Logistic Regression classifier
+    4. Evaluates on all splits and logs metrics to wandb
+    5. Saves vectorizer and classifier to disk
+    
+    Args:
+        data_dir: Directory containing label-named .txt training files.
+        out_dir: Output directory for saved models (default: "model").
+        test_size: Fraction of data for test set (default: 0.2).
+        val_size: Fraction of remaining data for validation (default: 0.1).
+        random_seed: Random seed for reproducibility (default: 42).
+    """
     wandb.init(
         project="text-classifier",
         config={

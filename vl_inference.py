@@ -1,3 +1,10 @@
+"""
+Vision-Language inference script using Qwen2.5-VL model.
+
+Loads a quantized Qwen2.5-VL-3B-Instruct model and performs vision-language
+inference on images with text prompts. Uses 4-bit quantization for memory efficiency.
+"""
+
 import os
 import torch
 from transformers import (

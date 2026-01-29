@@ -6,6 +6,13 @@ from cortex.query import ask
 
 
 def main():
+    """
+    Main entry point for CORTEX command-line interface.
+    
+    Supports two modes:
+    - --ingest: Ingest documents into the vector database
+    - --ask: Ask a question and get an answer from CORTEX
+    """
     parser = argparse.ArgumentParser(description="CORTEX - Document Q&A Assistant")
     parser.add_argument(
         "--ingest",

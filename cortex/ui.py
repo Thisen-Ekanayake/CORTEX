@@ -48,7 +48,12 @@ prompt_style = Style.from_dict({
 
 
 def print_logo(animate=False):
-    """Display the CORTEX logo with styling"""
+    """
+    Display the CORTEX logo with Rich styling in a panel.
+    
+    Args:
+        animate: If True, animate the logo appearance line by line (default: False).
+    """
     from cortex.logo import CORTEX_LOGO_TEXT
     
     # Work with the original logo text to preserve structure
@@ -181,7 +186,9 @@ def print_logo(animate=False):
 
 
 def print_welcome():
-    """Display welcome message"""
+    """
+    Display welcome message in a styled panel.
+    """
     welcome_text = Text()
     welcome_text.append("Welcome to ", style="white")
     welcome_text.append("CORTEX", style="bold cyan")
@@ -196,7 +203,9 @@ def print_welcome():
 
 
 def print_help():
-    """Display help information"""
+    """
+    Display help information showing all available CORTEX commands.
+    """
     help_table = Table(title="[bold cyan]CORTEX Commands[/bold cyan]", show_header=True, header_style="bold magenta")
     help_table.add_column("Command", style="cyan", no_wrap=True)
     help_table.add_column("Description", style="white")
@@ -214,13 +223,20 @@ def print_help():
 
 
 def check_db_status():
-    """Check if vector database exists"""
+    """
+    Check if the ChromaDB vector database exists.
+    
+    Returns:
+        bool: True if database exists, False otherwise.
+    """
     db_path = Path("chroma_db/chroma.sqlite3")
     return db_path.exists()
 
 
 def show_status():
-    """Display system status"""
+    """
+    Display system status including database availability and memory usage.
+    """
     status_table = Table(title="[bold cyan]System Status[/bold cyan]", show_header=True, header_style="bold magenta")
     status_table.add_column("Component", style="cyan", no_wrap=True)
     status_table.add_column("Status", style="white")
@@ -246,7 +262,9 @@ def show_status():
 
 
 def show_history():
-    """Display conversation history"""
+    """
+    Display the last 10 conversation items from memory in a formatted table.
+    """
     if not memory.history:
         console.print("[yellow]No conversation history yet.[/yellow]")
         return
@@ -268,7 +286,11 @@ def show_history():
 
 
 def ingest_documents():
-    """Ingest documents with progress display"""
+    """
+    Ingest documents into the vector database with progress display.
+    
+    Shows a progress spinner while loading and processing documents.
+    """
     console.print("[cyan]Starting document ingestion...[/cyan]")
     
     try:
@@ -290,7 +312,15 @@ def ingest_documents():
 
 
 def stream_response(query: str):
-    """Stream response with live updates"""
+    """
+    Stream response tokens in real-time with live display updates.
+    
+    Executes query in background thread and displays tokens as they're generated.
+    Shows sources after completion and saves to conversation memory.
+    
+    Args:
+        query: User query string to process.
+    """
     response_buffer = ""
     token_queue = queue.Queue()
     stream_complete = threading.Event()
@@ -395,7 +425,15 @@ def stream_response(query: str):
 
 
 def process_query(query: str):
-    """Process a user query"""
+    """
+    Process a user query or command.
+    
+    Handles special commands (help, exit, clear, history, ingest, status)
+    or routes regular queries to stream_response().
+    
+    Args:
+        query: User input string (query or command).
+    """
     query = query.strip()
     
     if not query:
@@ -438,7 +476,12 @@ def process_query(query: str):
 
 
 def interactive_mode():
-    """Run interactive CLI mode"""
+    """
+    Run the main interactive CLI mode.
+    
+    Initializes the interface, sets up command history, and runs the
+    main input loop with prompt session for user queries.
+    """
     print_logo(animate=False)  # Set to True for animated logo
     print_welcome()
     

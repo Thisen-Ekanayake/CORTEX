@@ -14,8 +14,24 @@ ID_TO_LABEL = {v: k for k, v in LABEL_MAP.items()}
 
 
 class TextClassifier:
+    """
+    Text classifier using TF-IDF + Logistic Regression.
+    
+    Loads pre-trained models and provides prediction methods for
+    classifying text queries into categories (chat, meta, rag, rag_doc, rag_img).
+    """
+    
     def __init__(self, model_dir="tf-idf_classifier/model"):
-        """Load the trained vectorizer and classifier."""
+        """
+        Initialize classifier by loading trained models from disk.
+        
+        Args:
+            model_dir: Directory containing tfidf.joblib and classifier.joblib files.
+        
+        Raises:
+            FileNotFoundError: If model files are missing.
+            ValueError: If model contains unknown class IDs.
+        """
         vectorizer_path = os.path.join(model_dir, "tfidf.joblib")
         classifier_path = os.path.join(model_dir, "classifier.joblib")
 
@@ -43,14 +59,29 @@ class TextClassifier:
         print(f"Model classes: {[ID_TO_LABEL[c] for c in self.class_ids]}")
 
     def _probs_to_scores(self, probs):
-        """Map probability array to {label: prob} using classifier.classes_ order."""
+        """
+        Map probability array to label → score dictionary.
+        
+        Args:
+            probs: Probability array from classifier.predict_proba().
+        
+        Returns:
+            dict: Mapping of label names to probability scores.
+        """
         return {ID_TO_LABEL[cid]: float(p) for cid, p in zip(self.class_ids, probs)}
 
     def predict(self, text):
         """
         Predict the category and confidence scores for a given text.
+        
+        Args:
+            text: Input text string to classify.
+        
         Returns:
-            dict with predicted_label, confidence_scores, predicted_class_id
+            dict: Contains:
+                - predicted_label: String name of predicted category
+                - confidence_scores: Dict mapping all labels to probabilities
+                - predicted_class_id: Integer class ID of prediction
         """
         X = self.vectorizer.transform([text])
 
@@ -68,9 +99,17 @@ class TextClassifier:
 
     def predict_batch(self, texts):
         """
-        Predict categories for multiple texts.
+        Predict categories for multiple texts efficiently.
+        
+        Args:
+            texts: List of text strings to classify.
+        
         Returns:
-            list of dicts
+            list: List of dicts, each containing:
+                - text: Original input text
+                - predicted_label: Predicted category name
+                - confidence_scores: Dict of label → probability
+                - predicted_class_id: Integer class ID
         """
         X = self.vectorizer.transform(texts)
         probs_all = self.classifier.predict_proba(X)
@@ -91,8 +130,16 @@ class TextClassifier:
 
     def rag_total_score(self, confidence_scores):
         """
-        Optional helper: combine rag-like classes into one score.
-        Useful if downstream just needs 'rag vs not rag' sometimes.
+        Combine RAG-related class scores into a single score.
+        
+        Sums probabilities for rag, rag_doc, and rag_img classes.
+        Useful when downstream code only needs "RAG vs not RAG" distinction.
+        
+        Args:
+            confidence_scores: Dict mapping labels to probabilities.
+        
+        Returns:
+            float: Sum of all RAG-related class probabilities.
         """
         return (
             confidence_scores.get("rag", 0.0) +
@@ -102,7 +149,16 @@ class TextClassifier:
 
 
 def print_results(result):
-    """Pretty print the classification results with explicit RAG breakdown."""
+    """
+    Pretty print classification results with explicit RAG breakdown.
+    
+    Formats and displays predicted category, RAG confidence breakdown,
+    and other class scores in a readable format.
+    
+    Args:
+        result: Dict from classifier.predict() containing predicted_label
+                and confidence_scores.
+    """
     scores = result["confidence_scores"]
 
     print("\n" + "=" * 60)

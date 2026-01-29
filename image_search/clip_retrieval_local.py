@@ -19,6 +19,22 @@ model.to(device)
 model.eval()
 
 def index_local_images(dir_path):
+    """
+    Index all images in a directory using CLIP embeddings.
+    
+    Processes all images in the given directory, generates CLIP embeddings
+    for each, and returns them along with their file paths. Images that
+    cannot be opened are silently skipped.
+    
+    Args:
+        dir_path: Directory path containing images to index.
+    
+    Returns:
+        tuple: (embeddings_tensor, paths_list)
+            - embeddings_tensor: PyTorch tensor of normalized image embeddings
+            - paths_list: List of file paths corresponding to embeddings
+            Returns (None, []) if no valid images found.
+    """
     paths = []
     embeddings = []
 
@@ -43,6 +59,21 @@ def index_local_images(dir_path):
     return None, []
 
 def retrieve_local(prompt, image_embeddings, image_paths, top_k=5):
+    """
+    Retrieve top-k most similar images for a text prompt using CLIP.
+    
+    Computes text embedding for the prompt, then finds the most similar
+    images using cosine similarity between text and image embeddings.
+    
+    Args:
+        prompt: Text query string.
+        image_embeddings: Pre-computed image embeddings tensor.
+        image_paths: List of image file paths corresponding to embeddings.
+        top_k: Number of top results to return (default: 5).
+    
+    Returns:
+        list: List of tuples (image_path, similarity_score) sorted by score descending.
+    """
     text_inputs = processor(
         text=[prompt],
         return_tensors="pt",

@@ -15,6 +15,19 @@ PERSIST_DIR = "chroma_db"
 
 
 def load_documents():
+    """
+    Load documents from the data directory.
+    
+    Supports multiple file formats:
+    - PDF files (.pdf) using PyPDFLoader
+    - Text files (.txt) using TextLoader
+    - Word documents (.docx) using Docx2txtLoader
+    
+    Each document's metadata is updated with the source filename.
+    
+    Returns:
+        list: List of Document objects loaded from the data directory.
+    """
     documents = []
 
     for filename in os.listdir(DATA_DIR):
@@ -38,6 +51,18 @@ def load_documents():
 
 
 def ingest():
+    """
+    Ingest documents into the vector database.
+    
+    This function performs the complete ingestion pipeline:
+    1. Loads documents from the data directory
+    2. Splits documents into chunks (1200 chars with 200 char overlap)
+    3. Generates embeddings for each chunk
+    4. Stores embeddings in ChromaDB vector store
+    5. Persists the vector store to disk
+    
+    Prints progress messages throughout the process.
+    """
     print("Loading documents...")
     documents = load_documents()
 

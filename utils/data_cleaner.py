@@ -1,3 +1,12 @@
+"""
+Data cleaning utility script.
+
+Cleans training data files by:
+- Removing empty lines and separator lines (e.g., =====)
+- Removing leading numbers (e.g., "2. ", "10. ")
+- Writing cleaned output to a new file
+"""
+
 import re
 
 input_file = "dataset/meta.txt"
