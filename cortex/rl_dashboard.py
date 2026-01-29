@@ -72,26 +72,24 @@ def print_confusion_matrix(feedbacks: List[RoutingFeedback]):
         return
     
     # Count predictions
-    matrix = {
-        "rag": {"rag": 0, "meta": 0, "chat": 0},
-        "meta": {"rag": 0, "meta": 0, "chat": 0},
-        "chat": {"rag": 0, "meta": 0, "chat": 0},
-    }
+    routes = ["rag", "rag_doc", "rag_img", "meta", "chat"]
+    matrix = {pred: {actual: 0 for actual in routes} for pred in routes}
     
     for fb in feedbacks:
         matrix[fb.predicted_route][fb.actual_route] += 1
     
     print("\nConfusion Matrix (Predicted → Actual)")
     print("=" * 50)
-    print(f"{'':8} │ {'RAG':>8} │ {'META':>8} │ {'CHAT':>8} │")
-    print("─" * 50)
+    header = f"{'':10} │ " + " │ ".join([f"{r.upper():>7}" for r in routes]) + " │"
+    print(header)
+    print("─" * len(header))
     
-    for pred in ["rag", "meta", "chat"]:
+    for pred in routes:
         counts = matrix[pred]
         total = sum(counts.values())
         
-        print(f"{pred.upper():8} │", end="")
-        for actual in ["rag", "meta", "chat"]:
+        print(f"{pred.upper():10} │", end="")
+        for actual in routes:
             count = counts[actual]
             
             # Color code: green for diagonal (correct), red for off-diagonal
@@ -107,9 +105,9 @@ def print_confusion_matrix(feedbacks: List[RoutingFeedback]):
                 print(f" {count:3} (  0%) │", end="")
         print()
     
-    print("=" * 50)
-    print(f"{'':8}   {'RAG':^8}   {'META':^8}   {'CHAT':^8}")
-    print(f"{'':8}   (Actual Categories)\n")
+    print("=" * len(header))
+    print(f"{'':10}   " + "   ".join([f"{r.upper():^7}" for r in routes]))
+    print(f"{'':10}   (Actual Categories)\n")
 
 
 def print_learning_curve(rl_router):
@@ -142,7 +140,7 @@ def print_route_performance(rl_router):
     print("\nPer-Category Performance")
     print("=" * 60)
     
-    for route_name in ["rag", "meta", "chat"]:
+    for route_name in ["rag", "rag_doc", "rag_img", "meta", "chat"]:
         stats = route_metrics[route_name]
         acc = stats["accuracy"]
         correct = stats["correct"]
@@ -177,7 +175,7 @@ def print_weight_evolution(rl_router):
     print("(Weights > 1.0 = boosted confidence, < 1.0 = reduced)")
     print()
     
-    for route_name in ["rag", "meta", "chat"]:
+    for route_name in ["rag", "rag_doc", "rag_img", "meta", "chat"]:
         weight = weights[route_name]
         
         # Visual representation
