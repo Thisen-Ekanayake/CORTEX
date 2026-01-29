@@ -4,6 +4,23 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
 
 def get_llm(streaming=False, callbacks=None, cpu_fallback=True):
+    """
+    Get or initialize the language model instance.
+    
+    Uses GPU if available (Qwen2.5-1.5B-Instruct via llama.cpp), otherwise
+    falls back to CPU-based model (tinylama-1.1B-chat) if cpu_fallback is True.
+    
+    Args:
+        streaming: Whether to enable streaming mode for token-by-token generation.
+        callbacks: List of callback handlers for streaming/events.
+        cpu_fallback: If True, use CPU model when GPU is unavailable (default: True).
+    
+    Returns:
+        LLM instance: Either LlamaCpp (GPU) or pipeline (CPU) model.
+    
+    Raises:
+        RuntimeError: If GPU unavailable and cpu_fallback is False.
+    """
     gpu_available = torch.cuda.is_available()
 
     if gpu_available:

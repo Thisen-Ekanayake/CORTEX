@@ -8,6 +8,18 @@ CACHE_DIR = "downloaded_images"
 os.makedirs(CACHE_DIR, exist_ok=True)
 
 def download_images(urls):
+    """
+    Download images from URLs and save them to cache directory.
+    
+    Downloads images with a 10-second timeout. Failed downloads are
+    silently skipped. Images are saved with sequential filenames.
+    
+    Args:
+        urls: List of image URL strings to download.
+    
+    Returns:
+        list: List of local file paths for successfully downloaded images.
+    """
     saved = []
     for i, u in enumerate(urls):
         try:
@@ -23,6 +35,23 @@ def download_images(urls):
     return saved
 
 def search_and_retrieve(prompt, num_images=20, top_k=5):
+    """
+    Search Google Images, download them, and retrieve top matches using CLIP.
+    
+    Complete pipeline that:
+    1. Searches Google Images for the prompt
+    2. Downloads images to cache directory
+    3. Indexes downloaded images with CLIP
+    4. Retrieves top-k most similar images
+    
+    Args:
+        prompt: Text query string for image search.
+        num_images: Number of images to fetch from Google (default: 20).
+        top_k: Number of top results to return after CLIP ranking (default: 5).
+    
+    Returns:
+        list: List of tuples (image_path, similarity_score) for top-k matches.
+    """
     urls = fetch_google_images(prompt, num_images)
     download_images(urls)
     emb, paths = index_local_images(CACHE_DIR)

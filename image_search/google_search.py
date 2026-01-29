@@ -14,7 +14,17 @@ gis = GoogleImagesSearch(API_KEY, CX)
 
 def fetch_google_images(prompt, num_images=10):
     """
-    Return a list of image URLs for the given prompt.
+    Fetch image URLs from Google Images search.
+    
+    Uses the Google Custom Search API to find images matching the prompt.
+    Only returns JPG and PNG images with safe search enabled.
+    
+    Args:
+        prompt: Search query string.
+        num_images: Number of image URLs to return (default: 10).
+    
+    Returns:
+        list: List of image URL strings.
     """
     search_params = {
         "q": prompt,

@@ -7,6 +7,16 @@ from cortex.query import run_rag, run_meta, run_chat, run_rag_mode
 
 
 class Route(Enum):
+    """
+    Enumeration of possible query routing destinations.
+    
+    Routes:
+        CHAT: General conversational queries
+        META: Queries about the system itself
+        RAG: Generic retrieval-augmented generation
+        RAG_DOC: Document-based retrieval
+        RAG_IMG: Image-based retrieval
+    """
     CHAT = "chat"
     META = "meta"
     RAG = "rag"          # generic rag entry
@@ -21,6 +31,19 @@ class TFIDFRouter:
     """
 
     def __init__(self, model_dir: str = "tf-idf_classifier/model"):
+        """
+        Initialize the TF-IDF router with pre-trained models.
+        
+        Loads the TF-IDF vectorizer and classifier from disk. The models
+        must be trained and saved using the train_classifier.py script.
+        
+        Args:
+            model_dir: Directory containing tfidf.joblib and classifier.joblib files.
+        
+        Raises:
+            FileNotFoundError: If model files are missing.
+            ValueError: If classifier contains unknown class IDs.
+        """
         vectorizer_path = os.path.join(model_dir, "tfidf.joblib")
         classifier_path = os.path.join(model_dir, "classifier.joblib")
 
@@ -49,7 +72,15 @@ class TFIDFRouter:
             raise ValueError(f"Unknown class IDs in model: {unknown}")
 
     def _scores_from_probs(self, probs) -> Dict[str, float]:
-        """Map probability vector to route-name → score."""
+        """
+        Map probability vector to route-name → score dictionary.
+        
+        Args:
+            probs: Probability array from classifier.predict_proba().
+        
+        Returns:
+            dict: Mapping of route names (str) to confidence scores (float).
+        """
         scores = {}
         for cid, prob in zip(self.class_ids, probs):
             route = self.id_to_route[cid]
@@ -58,7 +89,15 @@ class TFIDFRouter:
 
     def route_query(self, query: str) -> Tuple[Route, Dict[str, float]]:
         """
-        Classify query and return high-level route + confidence scores.
+        Classify query and return predicted route with confidence scores.
+        
+        Args:
+            query: User query string to classify.
+        
+        Returns:
+            tuple: (predicted_route, confidence_scores)
+                - predicted_route: Route enum value (most likely category)
+                - confidence_scores: Dict mapping route names to probabilities
         """
         X = self.vectorizer.transform([query])
 
@@ -76,6 +115,15 @@ _router = None
 
 
 def get_router(model_dir: str = "tf-idf_classifier/model") -> TFIDFRouter:
+    """
+    Get or create the global router instance (singleton pattern).
+    
+    Args:
+        model_dir: Directory containing model files (default: "tf-idf_classifier/model").
+    
+    Returns:
+        TFIDFRouter: The global router instance.
+    """
     global _router
     if _router is None:
         _router = TFIDFRouter(model_dir)
@@ -83,6 +131,17 @@ def get_router(model_dir: str = "tf-idf_classifier/model") -> TFIDFRouter:
 
 
 def route_query(query: str) -> Tuple[Route, Dict[str, float]]:
+    """
+    Route a query using the global router instance.
+    
+    Convenience function that uses the singleton router to classify a query.
+    
+    Args:
+        query: User query string to classify.
+    
+    Returns:
+        tuple: (predicted_route, confidence_scores)
+    """
     router = get_router()
     return router.route_query(query)
 
@@ -94,6 +153,21 @@ def execute(
 ) -> Tuple[str, Route, Dict[str, float]]:
     """
     Execute query based on routing decision.
+    
+    Routes the query to the appropriate handler (RAG, META, or CHAT) based on
+    classification confidence. Falls back to CHAT if confidence is below threshold
+    or if RAG retrieval fails.
+    
+    Args:
+        query: User query string to process.
+        callbacks: Optional callback handlers for streaming responses.
+        confidence_threshold: Minimum confidence required to use specialized route (default: 0.5).
+    
+    Returns:
+        tuple: (response_text, actual_route, confidence_scores)
+            - response_text: Generated response string
+            - actual_route: Route enum that was actually used
+            - confidence_scores: Dict of confidence scores for all routes
     """
 
     predicted_route, scores = route_query(query)
@@ -139,6 +213,15 @@ def execute(
 
 # ---- Debug helper ----
 def print_routing_info(query: str) -> None:
+    """
+    Print detailed routing information for a query (debug helper).
+    
+    Displays the query, predicted route, individual confidence scores,
+    and total RAG confidence (sum of rag, rag_doc, rag_img).
+    
+    Args:
+        query: User query string to analyze.
+    """
     route, scores = route_query(query)
 
     print(f'Query: "{query}"')
