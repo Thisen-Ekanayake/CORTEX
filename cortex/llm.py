@@ -13,10 +13,16 @@ def get_llm(streaming=False, callbacks=None, cpu_fallback=True):
             n_batch=64,
             max_tokens=512,
             temperature=0.2,
+            top_p=0.9,
+            top_k=40,
+
+            repeat_penalty=1.15,
+
             n_threads=8,
             streaming=streaming,
             callbacks=callbacks or [],
-            verbose=False
+            verbose=False,
+            stop=["</s>", "<|eot_id|>", "<|endoftext|>", "\nUser:", "\nAssistant:"]
         )
     
     elif cpu_fallback:
