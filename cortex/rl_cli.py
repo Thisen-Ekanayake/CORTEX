@@ -243,8 +243,21 @@ def execute_with_streaming(query: str, route: Route) -> str:
         buffer.append(token)
         print(token, end="", flush=True)
 
-    handler = StreamHandler(on_token=on_token)
-    result, _, _ = execute(query, callbacks=[handler])
+    if route == Route.RAG_IMG:
+        # Image retrieval is NOT streamable
+        result, _, _ = execute(
+            query,
+            route=route,
+            callbacks=None
+        )
+        print(result)
+    else:
+        handler = StreamHandler(on_token=on_token)
+        result, _, _ = execute(
+            query,
+            route=route,
+            callbacks=[handler]
+        )
 
     print("\n")  # New line after streaming
 

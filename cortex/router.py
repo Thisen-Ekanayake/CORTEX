@@ -148,6 +148,7 @@ def route_query(query: str) -> Tuple[Route, Dict[str, float]]:
 
 def execute(
     query: str,
+    route: Route | None = None,
     callbacks=None,
     confidence_threshold: float = 0.5
 ) -> Tuple[str, Route, Dict[str, float]]:
@@ -169,6 +170,26 @@ def execute(
             - actual_route: Route enum that was actually used
             - confidence_scores: Dict of confidence scores for all routes
     """
+    # --------------------------------------------------
+    # Forced route execution (used by RL CLI)
+    # --------------------------------------------------
+    if route is not None:
+        if route == Route.RAG_IMG:
+            result = run_rag_mode(query, mode="image", callbacks=callbacks)
+            return result, route, {}
+
+        if route in {Route.RAG, Route.RAG_DOC}:
+            result = run_rag_mode(query, mode="document", callbacks=callbacks)
+            return result, route, {}
+
+        if route == Route.META:
+            result = run_meta(query, callbacks=callbacks)
+            return result, route, {}
+
+        # Fallback
+        result = run_chat(query, callbacks=callbacks)
+        return result, Route.CHAT, {}
+
 
     predicted_route, scores = route_query(query)
 

@@ -11,6 +11,9 @@ data/
 youtube/
 wandb/
 rl_feedback/
+downloaded_images/
+logs/
+NeMo/
 
 *.odt
 *.txt
