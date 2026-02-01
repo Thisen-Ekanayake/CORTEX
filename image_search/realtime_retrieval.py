@@ -1,8 +1,12 @@
 import os
 import argparse
 import requests
-from google_search import fetch_google_images
-from clip_retrieval_local import index_local_images, retrieve_local
+try:
+    from .google_search import fetch_google_images
+    from .clip_retrieval_local import index_local_images, retrieve_local
+except ImportError:
+    from google_search import fetch_google_images
+    from clip_retrieval_local import index_local_images, retrieve_local
 
 CACHE_DIR = "downloaded_images"
 os.makedirs(CACHE_DIR, exist_ok=True)
