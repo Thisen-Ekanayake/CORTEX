@@ -1,3 +1,5 @@
+import os
+from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from pathlib import Path
 import wave
 from typing import Union
@@ -5,6 +7,14 @@ from typing import Union
 import numpy as np
 import sounddevice as sd
 from TTS.api import TTS
+
+
+@contextmanager
+def _silence():
+    """Context manager that suppresses stdout and stderr (e.g. Coqui TTS logs)."""
+    with open(os.devnull, "w") as devnull:
+        with redirect_stdout(devnull), redirect_stderr(devnull):
+            yield
 
 
 class TextToSpeech:
@@ -23,8 +33,9 @@ class TextToSpeech:
         self.model_name = model_name
         self.device = device
 
-        self.tts = TTS(model_name=self.model_name)
-        self.tts.to(self.device)
+        with _silence():
+            self.tts = TTS(model_name=self.model_name)
+            self.tts.to(self.device)
 
     def speak_to_file(
         self,
@@ -43,10 +54,11 @@ class TextToSpeech:
         """
         file_path = Path(file_path)
 
-        self.tts.tts_to_file(
-            text=text,
-            file_path=str(file_path),
-        )
+        with _silence():
+            self.tts.tts_to_file(
+                text=text,
+                file_path=str(file_path),
+            )
 
         return str(file_path)
 
