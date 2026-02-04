@@ -8,6 +8,7 @@ from typing import Dict, Optional
 from cortex.router import Route, execute
 from cortex.streaming import StreamHandler
 from cortex.rl_router import get_rl_router, RLRouter
+from cortex.query import get_sources
 from text_to_speech.text_to_speech import TextToSpeech
 
 
@@ -264,6 +265,19 @@ def execute_with_streaming(query: str, route: Route) -> str:
     # Use the full text we actually streamed (result may already be that, but
     # we rely on the assembled buffer to be consistent with what user saw).
     final_text = "".join(buffer) or (result or "")
+
+    # Display document sources for RAG queries
+    if route in {Route.RAG, Route.RAG_DOC}:
+        try:
+            sources = get_sources(query)
+            if sources:
+                print(f"{DIM}┌─ Document Sources ─────────────────────────────────────────┐{RESET}")
+                for i, source in enumerate(sources, 1):
+                    print(f"{DIM}│{RESET} {CYAN}[{i}]{RESET} {source}")
+                print(f"{DIM}└────────────────────────────────────────────────────────────┘{RESET}\n")
+        except Exception as e:
+            # Silently fail if sources can't be retrieved
+            pass
 
     if final_text.strip():
         try:
