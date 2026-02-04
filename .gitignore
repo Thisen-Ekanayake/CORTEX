@@ -14,6 +14,7 @@ rl_feedback/
 downloaded_images/
 logs/
 NeMo/
+node_modules/
 
 *.odt
 *.txt
