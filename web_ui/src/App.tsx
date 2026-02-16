@@ -13,6 +13,8 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
           <Route path="/chat" element={<Chat />} />
+          <Route path="/chat/new" element={<Chat />} />
+          <Route path="/chat/:id" element={<Chat />} />
           <Route path="/search" element={<Search />} />
           <Route path="/documents" element={<Documents />} />
           <Route path="/settings" element={<Settings />} />

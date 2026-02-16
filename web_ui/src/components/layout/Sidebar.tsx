@@ -9,7 +9,6 @@ type SidebarProps = {
 const SECTIONS = {
   main: [
     { path: '/', icon: '◉', label: 'Overview' },
-    { path: '/chat', icon: '◈', label: 'New Chat' },
   ],
   projects: [
     { path: '/project/alpha', icon: '◰', label: 'Project Alpha' },
