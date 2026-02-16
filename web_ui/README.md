@@ -1,17 +1,8 @@
-# CORTEX Dashboard
+# Cortex — Enterprise Intelligence Console
 
-A modern, dark-theme web UI for the [CORTEX](https://github.com/your-org/CORTEX) RAG/AI assistant. Built with React, TypeScript, Vite, Framer Motion, and Recharts.
+Enterprise UI for the Cortex on-premise RAG-based AI system. Three-panel layout: Top Bar, Left Sidebar (workspaces, query log, data sources), Main Intelligence Panel, Evidence Panel, Bottom Query Input Bar.
 
-## Features
-
-- **Dark theme** with soft contrast, glassmorphism, and semantic color tokens
-- **Responsive layout**: collapsible sidebar, top bar with search, notifications, voice command
-- **Pages**: Overview (stats + charts), Search, Documents (grid/list + hover previews), Chat (typed messages), Settings (toggles, profile)
-- **Micro-animations**: Framer Motion on cards, buttons, lists, and chart tooltips
-- **Accessibility**: Skip link, landmarks, ARIA, focus-visible, reduced-motion support
-- **Optional voice**: Web Speech API for voice search/commands (browser-dependent)
-
-## Quick Start
+## Run locally
 
 ```bash
 cd web_ui
@@ -21,51 +12,50 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173).
 
-## Scripts
+## Build
 
-| Command    | Description        |
-|-----------|--------------------|
-| `npm run dev`    | Start dev server (port 5173) |
-| `npm run build`  | Production build   |
-| `npm run preview`| Preview production build |
-
-## Project Structure
-
-```
-web_ui/
-├── DESIGN_SPEC.md      # UI design specification & style guide
-├── ACCESSIBILITY.md    # Accessibility notes & performance
-├── src/
-│   ├── theme/         # CSS design tokens (tokens.css)
-│   ├── components/
-│   │   ├── layout/     # Sidebar, TopBar, Layout
-│   │   ├── ui/         # Button, Card, inputs, toggle
-│   │   ├── charts/     # Recharts wrappers + tooltips
-│   │   └── voice/      # VoiceCommand module
-│   ├── pages/         # Home, Search, Documents, Chat, Settings
-│   └── data/          # Placeholder data
-└── public/
+```bash
+npm run build
+npm run preview
 ```
 
-## Design
+## Folder structure
 
-See [DESIGN_SPEC.md](./DESIGN_SPEC.md) for:
+```
+src/
+  App.tsx
+  main.tsx
+  index.css
+  types/
+    index.ts
+  data/
+    mockData.ts
+  components/
+    layout/
+      AppLayout.tsx
+    TopBar/
+      TopBar.tsx
+      WorkspaceSelector.tsx
+      ModeSelector.tsx
+      UserDropdown.tsx
+    Sidebar/
+      Sidebar.tsx
+      QueryLogItem.tsx
+    IntelligencePanel/
+      IntelligencePanel.tsx
+      ResponseSection.tsx
+    EvidencePanel/
+      EvidencePanel.tsx
+      EvidenceItem.tsx
+    QueryInputBar/
+      QueryInputBar.tsx
+```
 
-- Color palette and glassmorphism tokens
-- Typography scale and kinetic type notes
-- Component specs (sidebar, cards, buttons, charts, chat)
-- Motion timing and reduced-motion behavior
-- Responsive breakpoints
+## Tech
 
-## Backend Integration
+- React 18 (functional components, hooks)
+- TypeScript
+- Tailwind CSS
+- Vite
 
-This UI uses placeholder data. To connect to the CORTEX Python backend:
-
-1. Add an API client (e.g. `fetch` or axios) in `src/api/`.
-2. Replace imports from `src/data/placeholder.ts` with API calls.
-3. Wire Search to your search/RAG endpoint, Chat to your streaming chat endpoint, and Documents to your document list endpoint.
-4. Optionally add WebSocket or SSE for real-time stats on the Overview page.
-
-## License
-
-Same as the parent CORTEX project.
+Mock data: `src/data/mockData.ts`. Replace with API calls for production.
