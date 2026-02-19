@@ -1,108 +1,80 @@
 import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { Card } from '../components/ui/Card'
-import { Button } from '../components/ui/Button'
-import './pages.css'
+import { motion, AnimatePresence } from 'framer-motion'
+import { SettingsGeneral } from '../components/settings/SettingsGeneral'
+import { SettingsSecurity } from '../components/settings/SettingsSecurity'
+import { SettingsWorkspace } from '../components/settings/SettingsWorkspace'
+import { SettingsNotifications } from '../components/settings/SettingsNotifications'
+import { SettingsData } from '../components/settings/SettingsData'
+
+type SettingsTab = 'General' | 'Security' | 'Workspace' | 'Notifications' | 'Data'
 
 export function Settings() {
-  const [darkMode, setDarkMode] = useState(true)
-  const [compactSidebar, setCompactSidebar] = useState(false)
-  const [highContrast, setHighContrast] = useState(false)
-  const [animations, setAnimations] = useState(true)
+  const [activeTab, setActiveTab] = useState<SettingsTab>('General')
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'General': return <SettingsGeneral />
+      case 'Security': return <SettingsSecurity />
+      case 'Workspace': return <SettingsWorkspace />
+      case 'Notifications': return <SettingsNotifications />
+      case 'Data': return <SettingsData />
+      default: return <SettingsGeneral />
+    }
+  }
 
   return (
     <motion.div
-      className="page page--settings"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
+      className="max-w-6xl mx-auto p-4 md:p-10 space-y-12"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.19, 1, 0.22, 1] }}
     >
-      <h2 className="page__title">Settings</h2>
-      <p className="page__subtitle">
-        Dark mode toggle, layout customizations, and preferences.
-      </p>
+      {/* Header Section */}
+      <div className="flex flex-col gap-2">
+        <h2 className="text-4xl font-bold bg-gradient-to-r from-text-primary to-text-secondary bg-clip-text text-transparent">
+          Settings
+        </h2>
+        <p className="text-text-secondary text-[15px]">
+          Configure your workspace, appearance, and personal preferences.
+        </p>
+      </div>
 
-      <div className="settings-grid">
-        <Card>
-          <h3 className="card__heading">Appearance</h3>
-          <div className="settings-group">
-            <label className="toggle">
-              <span
-                className="toggle__track"
-                data-checked={darkMode}
-                onClick={() => setDarkMode((v) => !v)}
-                role="switch"
-                aria-checked={darkMode}
-                tabIndex={0}
-                onKeyDown={(e) => e.key === ' ' && setDarkMode((v) => !v)}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        {/* Navigation - Sticky Left */}
+        <div className="lg:col-span-3">
+          <nav className="sticky top-24 space-y-1">
+            {(['General', 'Security', 'Workspace', 'Notifications', 'Data'] as SettingsTab[]).map((item) => (
+              <button
+                key={item}
+                onClick={() => setActiveTab(item)}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === item
+                  ? 'bg-accent-primary/10 text-accent-primary border border-accent-primary/20 shadow-sm'
+                  : 'text-text-secondary hover:text-text-primary hover:bg-white/5 border border-transparent'
+                  }`}
               >
-                <span className="toggle__thumb" />
-              </span>
-              <span className="toggle__label">Dark mode</span>
-            </label>
-            <label className="toggle">
-              <span
-                className="toggle__track"
-                data-checked={highContrast}
-                onClick={() => setHighContrast((v) => !v)}
-                role="switch"
-                aria-checked={highContrast}
-                tabIndex={0}
-                onKeyDown={(e) => e.key === ' ' && setHighContrast((v) => !v)}
-              >
-                <span className="toggle__thumb" />
-              </span>
-              <span className="toggle__label">High contrast</span>
-            </label>
-          </div>
-        </Card>
+                {item}
+              </button>
+            ))}
+          </nav>
+        </div>
 
-        <Card>
-          <h3 className="card__heading">Layout</h3>
-          <div className="settings-group">
-            <label className="toggle">
-              <span
-                className="toggle__track"
-                data-checked={compactSidebar}
-                onClick={() => setCompactSidebar((v) => !v)}
-                role="switch"
-                aria-checked={compactSidebar}
-                tabIndex={0}
-                onKeyDown={(e) => e.key === ' ' && setCompactSidebar((v) => !v)}
-              >
-                <span className="toggle__thumb" />
-              </span>
-              <span className="toggle__label">Compact sidebar</span>
-            </label>
-          </div>
-        </Card>
-
-        <Card>
-          <h3 className="card__heading">Accessibility</h3>
-          <div className="settings-group">
-            <label className="toggle">
-              <span
-                className="toggle__track"
-                data-checked={animations}
-                onClick={() => setAnimations((v) => !v)}
-                role="switch"
-                aria-checked={animations}
-                tabIndex={0}
-                onKeyDown={(e) => e.key === ' ' && setAnimations((v) => !v)}
-              >
-                <span className="toggle__thumb" />
-              </span>
-              <span className="toggle__label">Animations</span>
-            </label>
-          </div>
-        </Card>
-
-        <Card>
-          <h3 className="card__heading">Profile</h3>
-          <p className="settings-desc">Manage your profile and preferences.</p>
-          <Button variant="secondary">Edit profile</Button>
-        </Card>
+        {/* Content Section */}
+        <div className="lg:col-span-9">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              {renderContent()}
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
     </motion.div>
   )
 }
+
+

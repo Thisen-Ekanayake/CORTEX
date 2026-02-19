@@ -1,130 +1,222 @@
 import { useState, useRef, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Button } from '../components/ui/Button'
-import { chatMessages } from '../data/placeholder'
-import './pages.css'
+import { motion } from 'framer-motion'
 
-function TypedMessage({ text, delay = 0 }: { text: string; delay?: number }) {
-  const [displayed, setDisplayed] = useState('')
-  const [done, setDone] = useState(false)
-
-  useEffect(() => {
-    const start = Date.now() + delay
-    let i = 0
-    const t = setInterval(() => {
-      if (Date.now() < start) return
-      if (i >= text.length) {
-        setDone(true)
-        clearInterval(t)
-        return
-      }
-      setDisplayed(text.slice(0, i + 1))
-      i++
-    }, 16)
-    return () => clearInterval(t)
-  }, [text, delay])
-
-  return <span>{done ? text : displayed}</span>
-}
+// Placeholder data
+const INITIAL_MESSAGES = [
+  {
+    id: 1,
+    role: 'assistant',
+    content: "Hello! I'm CORTEX, your advanced AI assistant. I can help you analyze documents, generate reports, or answer complex queries. How can I assist you today?"
+  }
+]
 
 export function Chat() {
-  const [messages, setMessages] = useState(chatMessages)
+  const [messages, setMessages] = useState(INITIAL_MESSAGES)
   const [input, setInput] = useState('')
-  const [sending, setSending] = useState(false)
+  const [isThinking, setIsThinking] = useState(false)
+  const [thinkingStep, setThinkingStep] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  }, [messages, isThinking])
 
-  const send = () => {
-    if (!input.trim() || sending) return
-    const userMsg = { role: 'user' as const, content: input.trim() }
-    setMessages((m) => [...m, userMsg])
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!input.trim() || isThinking) return
+
+    const userMsg = { id: Date.now(), role: 'user', content: input.trim() }
+    setMessages(prev => [...prev, userMsg])
     setInput('')
-    setSending(true)
+    setIsThinking(true)
+    setThinkingStep('Analyzing request...')
+
+    // Simulate AI processing
+    setTimeout(() => setThinkingStep('Searching knowledge base...'), 800)
+    setTimeout(() => setThinkingStep('Generating response...'), 1600)
+
     setTimeout(() => {
-      setMessages((m) => [
-        ...m,
-        {
-          role: 'assistant' as const,
-          content: "I'm the CORTEX assistant. In a full implementation, your query would be routed (RAG / CHAT / META) and answered from your knowledge base. Try the Search or Documents pages for more.",
-        },
-      ])
-      setSending(false)
-    }, 800)
+      setIsThinking(false)
+      setMessages(prev => [...prev, {
+        id: Date.now() + 1,
+        role: 'assistant',
+        content: "I've analyzed your request. Based on the available data, I can confirm that the Q3 financial report shows a 15% increase in revenue. Would you like a detailed breakdown?"
+      }])
+    }, 2500)
   }
 
   return (
-    <motion.div
-      className="page page--chat"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-    >
-      <h2 className="page__title">Assist</h2>
-      <p className="page__subtitle">
-        Integrated assistant with smooth message transitions and typed animations.
-      </p>
+    <div className="flex flex-col h-full relative bg-bg-base/50">
+      {/* Background Decorative Element */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-accent-primary/5 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[10%] right-[-5%] w-[30%] h-[30%] bg-purple-500/5 rounded-full blur-[100px]" />
+      </div>
 
-      <div className="chat-panel">
-        <div className="chat-messages">
-          <AnimatePresence initial={false}>
-            {messages.map((msg, i) => (
-              <motion.div
-                key={i}
-                className={`chat-message chat-message--${msg.role}`}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25 }}
-              >
-                <div className="chat-message__bubble">
-                  {msg.role === 'assistant' && i === 1 ? (
-                    <TypedMessage text={msg.content} delay={200} />
-                  ) : (
-                    msg.content
-                  )}
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-          {sending && (
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 scroll-smooth custom-scrollbar relative">
+        <div className="max-w-4xl mx-auto space-y-10">
+          {messages.map((msg) => (
             <motion.div
-              className="chat-message chat-message--assistant"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
+              key={msg.id}
+              initial={{ opacity: 0, y: 20, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.4, ease: [0.19, 1, 0.22, 1] }}
+              className={`flex gap-4 md:gap-6 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <div className="chat-message__bubble chat-message__bubble--typing">
-                <span className="typing-dot" />
-                <span className="typing-dot" />
-                <span className="typing-dot" />
+              {/* Avatar for Assistant */}
+              {msg.role === 'assistant' && (
+                <div className="relative shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#58a6ff] to-[#8c52ff] flex items-center justify-center shadow-lg shadow-accent-primary/20">
+                    <span className="text-white font-bold text-sm">C</span>
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-[#3fb950] border-2 border-bg-base rounded-full" />
+                </div>
+              )}
+
+              {/* Message Bubble */}
+              <div className={`group flex flex-col gap-2 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                <div className={`
+                  relative px-5 py-4 rounded-2xl md:rounded-[24px] text-sm md:text-[15px] leading-relaxed transition-all duration-300
+                  ${msg.role === 'user'
+                    ? 'bg-gradient-to-br from-accent-primary/90 to-blue-600/90 text-white rounded-tr-none shadow-premium-blue'
+                    : 'bg-white/[0.03] backdrop-blur-md border border-white/10 text-text-primary rounded-tl-none hover:bg-white/[0.05]'
+                  }
+                  max-w-full lg:max-w-2xl
+                `}>
+                  {msg.content}
+                </div>
+
+                {/* Message Meta */}
+                <span className="text-[10px] uppercase tracking-wider text-text-tertiary font-medium px-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {msg.role === 'assistant' ? 'CORTEX AI' : 'YOU'} • JUST NOW
+                </span>
+              </div>
+
+              {/* Avatar for User */}
+              {msg.role === 'user' && (
+                <div className="shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-bg-elevated border border-border-subtle flex items-center justify-center shadow-md">
+                    <span className="text-text-secondary font-bold text-sm">TE</span>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          ))}
+
+          {/* Thinking Indicator */}
+          {isThinking && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex gap-4 md:gap-6 items-start"
+            >
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#58a6ff]/50 to-[#8c52ff]/50 flex items-center justify-center animate-pulse shrink-0">
+                <span className="text-white/70 font-bold text-sm">C</span>
+              </div>
+              <div className="flex flex-col gap-3 pt-2">
+                <div className="flex items-center gap-3">
+                  <div className="flex gap-1">
+                    <span className="w-1.5 h-1.5 bg-accent-primary rounded-full animate-bounce [animation-delay:-0.3s]" />
+                    <span className="w-1.5 h-1.5 bg-accent-primary rounded-full animate-bounce [animation-delay:-0.15s]" />
+                    <span className="w-1.5 h-1.5 bg-accent-primary rounded-full animate-bounce" />
+                  </div>
+                  <span className="text-sm font-medium text-accent-primary animate-pulse">{thinkingStep}</span>
+                </div>
+                <div className="w-48 h-1 bg-white/5 rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-accent-primary"
+                    initial={{ width: "0%" }}
+                    animate={{ width: "100%" }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  />
+                </div>
               </div>
             </motion.div>
           )}
-          <div ref={bottomRef} />
+          <div ref={bottomRef} className="h-4" />
         </div>
-
-        <form
-          className="chat-input-wrap"
-          onSubmit={(e) => {
-            e.preventDefault()
-            send()
-          }}
-        >
-          <input
-            type="text"
-            className="chat-input"
-            placeholder="Ask anything…"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            disabled={sending}
-            aria-label="Message"
-          />
-          <Button type="submit" disabled={sending || !input.trim()} aria-label="Send">
-            Send
-          </Button>
-        </form>
       </div>
-    </motion.div>
+
+      {/* Input Area */}
+      <div className="px-4 pb-8 pt-2 md:px-8 md:pb-10 relative z-10">
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="glass-panel rounded-3xl p-2 md:p-3 shadow-2xl relative overflow-hidden group"
+          >
+            {/* Inner Glow focus effect */}
+            <div className="absolute inset-0 bg-accent-primary/0 group-focus-within:bg-accent-primary/[0.02] transition-colors pointer-events-none" />
+
+            <form onSubmit={handleSend} className="relative flex flex-col gap-2">
+              <div className="flex items-end gap-2 px-2">
+                <button
+                  type="button"
+                  className="p-2.5 text-text-tertiary hover:text-text-primary transition-all rounded-xl hover:bg-white/5 shrink-0"
+                  aria-label="Add context"
+                >
+                  <span className="text-xl">＋</span>
+                </button>
+
+                <textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend(e);
+                    }
+                  }}
+                  placeholder="Message CORTEX..."
+                  rows={1}
+                  className="flex-1 bg-transparent text-text-primary placeholder:text-text-tertiary py-3 px-1 resize-none outline-none max-h-60 min-h-[44px] text-base leading-relaxed custom-scrollbar"
+                />
+
+                <button
+                  type="submit"
+                  disabled={!input.trim() || isThinking}
+                  className={`
+                    mb-1 p-2.5 rounded-xl transition-all duration-300 transform active:scale-95
+                    ${input.trim() && !isThinking
+                      ? 'bg-accent-primary text-white shadow-glow hover:translate-y-[-2px]'
+                      : 'bg-white/5 text-text-tertiary'
+                    }
+                  `}
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                  </svg>
+                </button>
+              </div>
+
+              {/* Toolbar Bottom */}
+              <div className="flex items-center justify-between px-3 pb-1 border-t border-white/[0.03] pt-2">
+                <div className="flex gap-3">
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg hover:bg-white/5 text-[11px] text-text-tertiary transition-colors cursor-pointer">
+                    <span className="w-1.5 h-1.5 border border-text-tertiary rounded-sm" />
+                    <span>SEARCH</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg hover:bg-white/5 text-[11px] text-text-tertiary transition-colors cursor-pointer">
+                    <span className="w-1.5 h-1.5 border border-text-tertiary rounded-sm" />
+                    <span>ANALYZE</span>
+                  </div>
+                </div>
+                <div className="text-[10px] text-text-tertiary font-medium">
+                  ENTER TO SEND • SHIFT+ENTER FOR NEW LINE
+                </div>
+              </div>
+            </form>
+          </motion.div>
+
+          <div className="text-center mt-4">
+            <p className="text-[11px] tracking-wide text-text-tertiary uppercase font-medium opacity-60">
+              CORTEX Professional • Secure Enterprise Environment
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }

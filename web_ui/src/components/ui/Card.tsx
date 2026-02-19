@@ -8,7 +8,7 @@ type CardProps = {
 export function Card({ children, className = '' }: CardProps) {
   return (
     <motion.div
-      className={`card ${className}`}
+      className={`glass-panel p-6 rounded-2xl ${className}`}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
@@ -30,17 +30,23 @@ type StatCardProps = {
 export function StatCard({ title, value, subtitle, trend, trendValue }: StatCardProps) {
   return (
     <Card>
-      <div className="stat-card">
-        <span className="stat-card__title">{title}</span>
-        <span className="stat-card__value">{value}</span>
-        {subtitle && <span className="stat-card__subtitle">{subtitle}</span>}
-        {trend && trendValue && (
-          <span className={`stat-card__trend stat-card__trend--${trend}`}>
-            {trend === 'up' && '↑'}
-            {trend === 'down' && '↓'}
-            {trendValue}
-          </span>
-        )}
+      <div className="flex flex-col gap-2">
+        <span className="text-sm font-medium text-text-secondary">{title}</span>
+        <div className="flex items-end justify-between">
+          <span className="text-3xl font-bold text-text-primary tracking-tight">{value}</span>
+          {trend && trendValue && (
+            <span className={`text-xs font-medium px-2 py-1 rounded-full flex items-center gap-1 ${trend === 'up' ? 'text-accent-success bg-accent-success/10' :
+                trend === 'down' ? 'text-accent-error bg-accent-error/10' :
+                  'text-text-tertiary bg-white/5'
+              }`}>
+              {trend === 'up' && '↑'}
+              {trend === 'down' && '↓'}
+              {trendValue}
+            </span>
+          )}
+        </div>
+
+        {subtitle && <span className="text-xs text-text-tertiary mt-1">{subtitle}</span>}
       </div>
     </Card>
   )
