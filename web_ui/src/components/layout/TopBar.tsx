@@ -5,7 +5,7 @@ export function TopBar() {
   const [showUserMenu, setShowUserMenu] = useState(false)
 
   return (
-    <header className="h-[var(--top-bar-height)] flex items-center justify-between px-4 border-b border-border-subtle bg-surface-glass/50 backdrop-blur-md sticky top-0 z-40">
+    <header className="h-[var(--top-bar-height)] flex items-center justify-between px-4 border-b border-border-subtle bg-bg-base/80 backdrop-blur-xl sticky top-0 z-40">
       <div className="flex items-center gap-4">
         {/* Model Selector */}
         <ModelSelector />

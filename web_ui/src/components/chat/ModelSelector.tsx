@@ -32,7 +32,7 @@ export function ModelSelector() {
                             initial={{ opacity: 0, y: -4 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -4 }}
-                            className="absolute top-full left-0 mt-2 w-64 p-1 rounded-xl border border-border-subtle bg-bg-elevated/90 backdrop-blur-xl shadow-panel z-50"
+                            className="absolute top-full left-0 mt-2 w-64 p-1 rounded-xl border border-border-subtle bg-[#0d1117]/95 backdrop-blur-2xl shadow-panel z-50"
                         >
                             {MODELS.map((model) => (
                                 <button
