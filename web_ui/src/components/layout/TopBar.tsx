@@ -9,23 +9,12 @@ export function TopBar() {
       <div className="flex items-center gap-4">
         {/* Model Selector */}
         <ModelSelector />
-
-        {/* Breadcrumb / Context */}
-        <div className="h-4 w-px bg-border-subtle" />
-        <span className="text-sm text-text-secondary truncate max-w-[200px] lg:max-w-md">
-          New Chat
-        </span>
       </div>
 
       <div className="flex items-center gap-2">
         {/* Search Trigger */}
         <button className="p-2 text-text-secondary hover:text-text-primary hover:bg-white/5 rounded-md transition-colors">
           <span className="text-lg">⌕</span>
-        </button>
-
-        {/* Share Button */}
-        <button className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-text-primary bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-colors">
-          <span>Share</span>
         </button>
 
         {/* User Profile */}

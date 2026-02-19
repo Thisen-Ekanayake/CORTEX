@@ -32,7 +32,7 @@ export function ModelSelector() {
                             initial={{ opacity: 0, y: -4 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -4 }}
-                            className="absolute top-full left-0 mt-2 w-64 p-1 rounded-xl border border-border-subtle bg-surface-glass backdrop-blur-xl shadow-panel z-50"
+                            className="absolute top-full left-0 mt-2 w-64 p-1 rounded-xl border border-border-subtle bg-bg-elevated/90 backdrop-blur-xl shadow-panel z-50"
                         >
                             {MODELS.map((model) => (
                                 <button
@@ -42,8 +42,8 @@ export function ModelSelector() {
                                         setIsOpen(false)
                                     }}
                                     className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors flex flex-col gap-0.5 ${selectedModel.id === model.id
-                                            ? 'bg-accent-primary/10'
-                                            : 'hover:bg-white/5'
+                                        ? 'bg-accent-primary/10'
+                                        : 'hover:bg-white/5'
                                         }`}
                                 >
                                     <div className="flex items-center justify-between">
