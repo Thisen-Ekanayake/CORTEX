@@ -46,112 +46,173 @@ export function Chat() {
   }
 
   return (
-    <div className="flex flex-col h-full relative">
+    <div className="flex flex-col h-full relative bg-bg-base/50">
+      {/* Background Decorative Element */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-accent-primary/5 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[10%] right-[-5%] w-[30%] h-[30%] bg-purple-500/5 rounded-full blur-[100px]" />
+      </div>
+
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 scroll-smooth">
-        {messages.map((msg) => (
-          <motion.div
-            key={msg.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`flex gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start max-w-3xl mx-auto'}`}
-          >
-            {/* Avatar for Assistant */}
-            {msg.role === 'assistant' && (
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-accent-primary to-purple-600 flex items-center justify-center text-xs text-white font-bold shadow-glow shrink-0">
-                C
-              </div>
-            )}
+      <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 scroll-smooth custom-scrollbar relative">
+        <div className="max-w-4xl mx-auto space-y-10">
+          {messages.map((msg) => (
+            <motion.div
+              key={msg.id}
+              initial={{ opacity: 0, y: 20, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.4, ease: [0.19, 1, 0.22, 1] }}
+              className={`flex gap-4 md:gap-6 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              {/* Avatar for Assistant */}
+              {msg.role === 'assistant' && (
+                <div className="relative shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#58a6ff] to-[#8c52ff] flex items-center justify-center shadow-lg shadow-accent-primary/20">
+                    <span className="text-white font-bold text-sm">C</span>
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-[#3fb950] border-2 border-bg-base rounded-full" />
+                </div>
+              )}
 
-            {/* Message Bubble */}
-            <div className={`max-w-[85%] lg:max-w-[75%] space-y-1 ${msg.role === 'user' ? 'order-1' : 'order-2'}`}>
-              <div className={`
-                p-3.5 md:p-4 rounded-2xl text-sm md:text-base leading-relaxed shadow-sm
-                ${msg.role === 'user'
-                  ? 'bg-bg-elevated text-text-primary rounded-tr-sm border border-border-subtle'
-                  : 'bg-transparent text-text-primary px-0 py-0'
-                }
-              `}>
-                {msg.content}
-              </div>
-            </div>
+              {/* Message Bubble */}
+              <div className={`group flex flex-col gap-2 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                <div className={`
+                  relative px-5 py-4 rounded-2xl md:rounded-[24px] text-sm md:text-[15px] leading-relaxed transition-all duration-300
+                  ${msg.role === 'user'
+                    ? 'bg-gradient-to-br from-accent-primary/90 to-blue-600/90 text-white rounded-tr-none shadow-premium-blue'
+                    : 'bg-white/[0.03] backdrop-blur-md border border-white/10 text-text-primary rounded-tl-none hover:bg-white/[0.05]'
+                  }
+                  max-w-full lg:max-w-2xl
+                `}>
+                  {msg.content}
+                </div>
 
-            {/* Avatar for User (Hidden but keeps layout balanced if needed, or just omit) */}
-            {msg.role === 'user' && (
-              <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs text-white font-bold shrink-0 order-2">
-                TE
+                {/* Message Meta */}
+                <span className="text-[10px] uppercase tracking-wider text-text-tertiary font-medium px-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {msg.role === 'assistant' ? 'CORTEX AI' : 'YOU'} • JUST NOW
+                </span>
               </div>
-            )}
-          </motion.div>
-        ))}
 
-        {/* Thinking Indicator */}
-        {isThinking && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex gap-4 max-w-3xl mx-auto"
-          >
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-accent-primary to-purple-600 flex items-center justify-center text-xs text-white font-bold shadow-glow shrink-0 animate-pulse">
-              C
-            </div>
-            <div className="flex items-center gap-3 text-sm text-text-secondary">
-              <span className="w-2 h-2 bg-accent-primary rounded-full animate-bounce" />
-              <span>{thinkingStep}</span>
-            </div>
-          </motion.div>
-        )}
-        <div ref={bottomRef} />
+              {/* Avatar for User */}
+              {msg.role === 'user' && (
+                <div className="shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-bg-elevated border border-border-subtle flex items-center justify-center shadow-md">
+                    <span className="text-text-secondary font-bold text-sm">TE</span>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          ))}
+
+          {/* Thinking Indicator */}
+          {isThinking && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex gap-4 md:gap-6 items-start"
+            >
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#58a6ff]/50 to-[#8c52ff]/50 flex items-center justify-center animate-pulse shrink-0">
+                <span className="text-white/70 font-bold text-sm">C</span>
+              </div>
+              <div className="flex flex-col gap-3 pt-2">
+                <div className="flex items-center gap-3">
+                  <div className="flex gap-1">
+                    <span className="w-1.5 h-1.5 bg-accent-primary rounded-full animate-bounce [animation-delay:-0.3s]" />
+                    <span className="w-1.5 h-1.5 bg-accent-primary rounded-full animate-bounce [animation-delay:-0.15s]" />
+                    <span className="w-1.5 h-1.5 bg-accent-primary rounded-full animate-bounce" />
+                  </div>
+                  <span className="text-sm font-medium text-accent-primary animate-pulse">{thinkingStep}</span>
+                </div>
+                <div className="w-48 h-1 bg-white/5 rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-accent-primary"
+                    initial={{ width: "0%" }}
+                    animate={{ width: "100%" }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  />
+                </div>
+              </div>
+            </motion.div>
+          )}
+          <div ref={bottomRef} className="h-4" />
+        </div>
       </div>
 
       {/* Input Area */}
-      <div className="p-4 md:p-6 bg-bg-base/80 backdrop-blur-md sticky bottom-0 z-10">
-        <div className="max-w-3xl mx-auto relative group">
-          <form
-            onSubmit={handleSend}
-            className="relative bg-bg-elevated/50 border border-border-subtle focus-within:border-accent-primary/50 focus-within:ring-1 focus-within:ring-accent-primary/50 rounded-xl transition-all shadow-lg"
+      <div className="px-4 pb-8 pt-2 md:px-8 md:pb-10 relative z-10">
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="glass-panel rounded-3xl p-2 md:p-3 shadow-2xl relative overflow-hidden group"
           >
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend(e);
-                }
-              }}
-              placeholder="Ask anything..."
-              rows={1}
-              className="w-full bg-transparent text-text-primary placeholder:text-text-tertiary p-3 md:p-4 pr-12 md:pr-14 resize-none outline-none max-h-48 min-h-[52px] custom-scrollbar"
-              style={{ minHeight: '52px' }} // default height
-            />
+            {/* Inner Glow focus effect */}
+            <div className="absolute inset-0 bg-accent-primary/0 group-focus-within:bg-accent-primary/[0.02] transition-colors pointer-events-none" />
 
-            {/* Attachments / Actions (Left) - Future implementation */}
-            <button
-              type="button"
-              className="absolute left-3 bottom-3 p-1.5 text-text-tertiary hover:text-text-primary transition-colors rounded-md hover:bg-white/5"
-              aria-label="Attach file"
-            >
-              <span className="text-lg">＋</span>
-            </button>
+            <form onSubmit={handleSend} className="relative flex flex-col gap-2">
+              <div className="flex items-end gap-2 px-2">
+                <button
+                  type="button"
+                  className="p-2.5 text-text-tertiary hover:text-text-primary transition-all rounded-xl hover:bg-white/5 shrink-0"
+                  aria-label="Add context"
+                >
+                  <span className="text-xl">＋</span>
+                </button>
 
-            {/* Input Padding Adjustment for Left Icon */}
-            <style>{`
-              textarea { padding-left: 40px !important; }
-            `}</style>
+                <textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend(e);
+                    }
+                  }}
+                  placeholder="Message CORTEX..."
+                  rows={1}
+                  className="flex-1 bg-transparent text-text-primary placeholder:text-text-tertiary py-3 px-1 resize-none outline-none max-h-60 min-h-[44px] text-base leading-relaxed custom-scrollbar"
+                />
 
-            {/* Send Button (Right) */}
-            <button
-              type="submit"
-              disabled={!input.trim() || isThinking}
-              className="absolute right-2 bottom-2 p-2 rounded-lg bg-accent-primary text-white disabled:opacity-50 disabled:bg-transparent disabled:text-text-tertiary transition-all hover:bg-accent-primary/90"
-            >
-              <span className="text-sm font-semibold">↑</span>
-            </button>
-          </form>
-          <div className="text-center mt-2">
-            <p className="text-xs text-text-tertiary">
-              CORTEX can make mistakes. Verify important information.
+                <button
+                  type="submit"
+                  disabled={!input.trim() || isThinking}
+                  className={`
+                    mb-1 p-2.5 rounded-xl transition-all duration-300 transform active:scale-95
+                    ${input.trim() && !isThinking
+                      ? 'bg-accent-primary text-white shadow-glow hover:translate-y-[-2px]'
+                      : 'bg-white/5 text-text-tertiary'
+                    }
+                  `}
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                  </svg>
+                </button>
+              </div>
+
+              {/* Toolbar Bottom */}
+              <div className="flex items-center justify-between px-3 pb-1 border-t border-white/[0.03] pt-2">
+                <div className="flex gap-3">
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg hover:bg-white/5 text-[11px] text-text-tertiary transition-colors cursor-pointer">
+                    <span className="w-1.5 h-1.5 border border-text-tertiary rounded-sm" />
+                    <span>SEARCH</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg hover:bg-white/5 text-[11px] text-text-tertiary transition-colors cursor-pointer">
+                    <span className="w-1.5 h-1.5 border border-text-tertiary rounded-sm" />
+                    <span>ANALYZE</span>
+                  </div>
+                </div>
+                <div className="text-[10px] text-text-tertiary font-medium">
+                  ENTER TO SEND • SHIFT+ENTER FOR NEW LINE
+                </div>
+              </div>
+            </form>
+          </motion.div>
+
+          <div className="text-center mt-4">
+            <p className="text-[11px] tracking-wide text-text-tertiary uppercase font-medium opacity-60">
+              CORTEX Professional • Secure Enterprise Environment
             </p>
           </div>
         </div>

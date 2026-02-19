@@ -34,6 +34,8 @@ export default {
         'panel': '0 8px 32px 0 rgba(0, 0, 0, 0.36)',
         'glass': '0 4px 30px rgba(0, 0, 0, 0.1)',
         'glow': '0 0 20px -5px var(--accent-primary)',
+        'premium-blue': '0 10px 25px -5px rgba(88, 166, 255, 0.3), 0 8px 10px -6px rgba(88, 166, 255, 0.3)',
+        'premium-glass': '0 10px 30px -10px rgba(0, 0, 0, 0.5)',
       },
       backdropBlur: {
         'xs': '2px',
