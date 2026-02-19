@@ -1,14 +1,17 @@
 import { useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { ModelSelector } from '../chat/ModelSelector'
 
 export function TopBar() {
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const location = useLocation()
+  const isSettingsPage = location.pathname === '/settings'
 
   return (
     <header className="h-[var(--top-bar-height)] flex items-center justify-between px-4 border-b border-border-subtle bg-bg-base/80 backdrop-blur-xl sticky top-0 z-40">
       <div className="flex items-center gap-4">
         {/* Model Selector */}
-        <ModelSelector />
+        {!isSettingsPage && <ModelSelector />}
       </div>
 
       <div className="flex items-center gap-2">
