@@ -1,6 +1,6 @@
 __pycache__/
 chroma_db/
-models/
+/models/
 model/
 dataset/
 data/
@@ -28,5 +28,9 @@ node_modules/
 .python-version
 
 testing.ipynb
+
+backend/venv/
+backend/pg_data/
+backend/__pycache__/
 
 !requirements.txt
