@@ -39,7 +39,9 @@ backend/__pycache__/
 *.odt
 *.pdf
 *.log
+*.txt
 *.wav
+*.json
 *.jsonl
 # *.joblib: ignore serialised sklearn models everywhere EXCEPT the classifier
 *.joblib
