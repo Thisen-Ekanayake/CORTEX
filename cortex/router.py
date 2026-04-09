@@ -1,8 +1,9 @@
 import os
 import joblib
 from enum import Enum
-from typing import Tuple, Dict
+from typing import Any, Dict, List, Optional, Tuple
 
+from cortex.config import TFIDF_MODEL_DIR
 from cortex.query import run_rag, run_meta, run_chat, run_rag_mode
 
 
@@ -114,7 +115,7 @@ class TFIDFRouter:
 _router = None
 
 
-def get_router(model_dir: str = "tf-idf_classifier/model") -> TFIDFRouter:
+def get_router(model_dir: str = TFIDF_MODEL_DIR) -> TFIDFRouter:
     """
     Get or create the global router instance (singleton pattern).
     
@@ -148,9 +149,9 @@ def route_query(query: str) -> Tuple[Route, Dict[str, float]]:
 
 def execute(
     query: str,
-    route: Route | None = None,
-    callbacks=None,
-    confidence_threshold: float = 0.5
+    route: Optional[Route] = None,
+    callbacks: Optional[List[Any]] = None,
+    confidence_threshold: float = 0.5,
 ) -> Tuple[str, Route, Dict[str, float]]:
     """
     Execute query based on routing decision.
