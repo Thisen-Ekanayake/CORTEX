@@ -38,6 +38,7 @@ node_modules/
 *.json
 *.jsonl
 *.txt
+*.joblib
 
 # ── Secrets & local config ───────────────────────────────────────────────────
 .env
