@@ -31,3 +31,8 @@ warn_unused_ignores = true
 warn_redundant_casts = true
 # Don't require annotations on every function — the project is incrementally typed
 check_untyped_defs = true
+
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
