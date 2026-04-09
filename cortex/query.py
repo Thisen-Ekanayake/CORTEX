@@ -1,15 +1,18 @@
-from typing import List, Optional, Literal
+import logging
+from typing import Any, List, Optional, Literal
 
 from langchain_chroma import Chroma
+from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableLambda, RunnablePassthrough
 
+from cortex.config import PERSIST_DIR
 from cortex.embeddings import get_embeddings
 from cortex.llm import get_llm
 from cortex.persona import CORTEX_SYSTEM_PROMPT
 
-PERSIST_DIR = "chroma_db"
+logger = logging.getLogger(__name__)
 
 # -------------------------
 # Internal caches
@@ -67,7 +70,7 @@ def format_docs(docs) -> str:
 # -------------------------
 # RAG chain (documents)
 # -------------------------
-def get_rag_chain(callbacks=None):
+def get_rag_chain(callbacks: Optional[List[Any]] = None):
     global _rag_chain
 
     if _rag_chain and not callbacks:
@@ -113,7 +116,7 @@ Question:
 def run_rag_mode(
     query: str,
     mode: Literal["document", "image"] = "document",
-    callbacks=None,
+    callbacks: Optional[List[Any]] = None,
 ) -> Optional[str]:
     """
     mode="document" → text RAG using vector DB
@@ -124,7 +127,8 @@ def run_rag_mode(
     if mode == "image":
         try:
             from image_search.realtime_retrieval import search_and_retrieve
-        except Exception:
+        except ImportError as exc:
+            logger.warning("image_search module unavailable: %s", exc)
             return None
 
         try:
@@ -133,7 +137,8 @@ def run_rag_mode(
                 num_images=10,
                 top_k=5
             )
-        except Exception:
+        except Exception as exc:
+            logger.error("Image retrieval failed for query %r: %s", query, exc)
             return None
 
         if not results:
@@ -164,7 +169,7 @@ def run_rag_mode(
 # -------------------------
 # Convenience wrapper
 # -------------------------
-def run_rag(query: str, callbacks=None) -> Optional[str]:
+def run_rag(query: str, callbacks: Optional[List[Any]] = None) -> Optional[str]:
     return run_rag_mode(
         query=query,
         mode="document",
@@ -190,7 +195,7 @@ def get_sources(query: str) -> List[str]:
 # -------------------------
 # META execution
 # -------------------------
-def run_meta(query: str, callbacks=None) -> str:
+def run_meta(query: str, callbacks: Optional[List[Any]] = None) -> str:
     llm = get_llm(streaming=True, callbacks=callbacks)
 
     meta_prompt = f"""Based on this system information:
@@ -215,7 +220,7 @@ Assistant:"""
 # -------------------------
 # CHAT execution
 # -------------------------
-def run_chat(query: str, callbacks=None) -> str:
+def run_chat(query: str, callbacks: Optional[List[Any]] = None) -> str:
     llm = get_llm(streaming=True, callbacks=callbacks)
 
     chat_prompt = f"""{CORTEX_SYSTEM_PROMPT}
