@@ -11,6 +11,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # ── Python: unit tests ───────────────────────────────────────────────────
+  # Heavy ML packages (torch, llama-cpp, chromadb) are stubbed in
+  # tests/conftest.py, so only a lightweight install is needed here.
+  python-tests:
+    name: Python — unit tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install test dependencies
+        run: pip install pytest pytest-cov scikit-learn joblib numpy requests
+
+      - name: Run tests with coverage
+        run: pytest --cov=cortex --cov=image_search --cov-report=term-missing --cov-fail-under=60
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-${{ github.sha }}
+          path: .coverage
+          retention-days: 7
+
   # ── Python: lint & type-check ─────────────────────────────────────────────
   # Intentionally lightweight: no ML packages installed.
   # Heavy deps (torch, llama-cpp, sentence-transformers) are skipped;
