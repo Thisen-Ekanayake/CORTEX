@@ -1,0 +1,67 @@
+name: Retrain TF-IDF Classifier
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "tf-idf_classifier/dataset/**"
+      - "tf-idf_classifier/train_classifier.py"
+
+  # Allow manual trigger from the Actions tab (useful for testing)
+  workflow_dispatch:
+
+concurrency:
+  group: retrain-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  retrain:
+    name: Retrain & commit model
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # needed to commit model files back
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Fetch full history so the bot commit doesn't rebase away changes
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install scikit-learn joblib numpy wandb
+
+      - name: Retrain classifier
+        env:
+          WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
+        run: |
+          # Use offline mode when no API key is provided (forks, open PRs, etc.)
+          if [ -z "$WANDB_API_KEY" ]; then
+            export WANDB_MODE=offline
+          fi
+          cd tf-idf_classifier
+          python train_classifier.py
+
+      - name: Upload model artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfidf-model-${{ github.sha }}
+          path: tf-idf_classifier/model/
+          retention-days: 90
+
+      - name: Commit updated model back to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add tf-idf_classifier/model/
+          # Only commit if the model files actually changed
+          if git diff --staged --quiet; then
+            echo "Model unchanged — nothing to commit."
+          else
+            git commit -m "ci: retrain TF-IDF classifier [skip ci]"
+            git push
+          fi
