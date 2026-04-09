@@ -4,7 +4,9 @@ Minimal CLI interface for CORTEX.
 Allows interactive querying with streaming output and confidence scores.
 """
 
+import os
 from typing import Dict
+
 from cortex.router import execute, Route, route_query
 from cortex.streaming import StreamHandler
 
@@ -174,7 +176,6 @@ def main():
                 break
             
             if query.lower() == 'clear':
-                import os
                 os.system('clear' if os.name != 'nt' else 'cls')
                 print_header()
                 continue
