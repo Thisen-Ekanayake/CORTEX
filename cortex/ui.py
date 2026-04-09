@@ -24,11 +24,10 @@ from prompt_toolkit.styles import Style
 from prompt_toolkit.formatted_text import HTML
 
 from cortex.ingest import ingest
-from cortex.query import load_qa_chain
+from cortex.query import get_sources
 from cortex.router import execute
 from cortex.memory import ConversationMemory
 from cortex.streaming import StreamHandler
-from cortex.logo import get_logo
 
 # Initialize console
 console = Console()
@@ -348,7 +347,7 @@ def stream_response(query: str):
     # Execute query in background thread
     def execute_query():
         try:
-            result = execute(query, callbacks=[stream_handler])
+            result, _route, _scores = execute(query, callbacks=[stream_handler])
             # Put final result if streaming didn't capture everything
             if result:
                 token_queue.put(("final", result))
@@ -399,20 +398,16 @@ def stream_response(query: str):
             
             # Show sources if available
             try:
-                chain, retriever = load_qa_chain()
-                docs = retriever._get_relevant_documents(query, run_manager=None)
-                if docs:
-                    sources_text = "\n".join([
-                        f"• {doc.metadata.get('source', 'unknown')} (page {doc.metadata.get('page', 'N/A')})"
-                        for doc in docs[:5]
-                    ])
+                sources = get_sources(query)
+                if sources:
+                    sources_text = "\n".join(f"• {s}" for s in sources[:5])
                     console.print(Panel(
                         sources_text,
                         title="[bold cyan]Sources[/bold cyan]",
                         border_style="cyan",
                         padding=(0, 1)
                     ))
-            except:
+            except Exception:
                 pass
             
             memory.add(query, response_buffer)
