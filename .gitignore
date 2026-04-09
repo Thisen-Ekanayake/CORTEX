@@ -23,6 +23,9 @@ NeMo/
 # ── Source data (documents & training sets) ──────────────────────────────────
 data/
 dataset/
+# Allow the classifier training set and trained model — needed for CI retraining
+!tf-idf_classifier/dataset/
+!tf-idf_classifier/model/
 
 # ── Node / web_ui ────────────────────────────────────────────────────────────
 node_modules/
