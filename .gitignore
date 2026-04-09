@@ -45,7 +45,6 @@ backend/__pycache__/
 *.jsonl
 # *.joblib: ignore serialised sklearn models everywhere EXCEPT the classifier
 *.joblib
-!tf-idf_classifier/model/*.joblib
 
 # ── Secrets & local config ───────────────────────────────────────────────────
 .env
