@@ -1,32 +1,32 @@
 import os
+from typing import List
+
 from langchain_community.document_loaders import (
     PyPDFLoader,
     TextLoader,
     Docx2txtLoader
 )
+from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
 
+from cortex.config import DATA_DIR, PERSIST_DIR
 from cortex.embeddings import get_embeddings
 
 
-DATA_DIR = "data/documents"
-PERSIST_DIR = "chroma_db"
-
-
-def load_documents():
+def load_documents() -> List[Document]:
     """
     Load documents from the data directory.
-    
+
     Supports multiple file formats:
     - PDF files (.pdf) using PyPDFLoader
     - Text files (.txt) using TextLoader
     - Word documents (.docx) using Docx2txtLoader
-    
+
     Each document's metadata is updated with the source filename.
-    
+
     Returns:
-        list: List of Document objects loaded from the data directory.
+        List of Document objects loaded from the data directory.
     """
     documents = []
 
@@ -44,8 +44,8 @@ def load_documents():
 
         docs = loader.load()
         for doc in docs:
-            doc.metadata['source'] = filename
-        documents.extend(loader.load())
+            doc.metadata["source"] = filename
+        documents.extend(docs)
 
     return documents
 
