@@ -1,31 +1,47 @@
+# ── Python ──────────────────────────────────────────────────────────────────
 __pycache__/
-chroma_db/
-models/
-model/
-dataset/
-data/
+
+# ── Virtual environments ─────────────────────────────────────────────────────
 .venv/
 .vl_venv/
 .lang_venv/
 .tts/
-youtube/
-wandb/
+
+# ── CORTEX runtime data ──────────────────────────────────────────────────────
+chroma_db/
 rl_feedback/
 downloaded_images/
 logs/
+youtube/
+wandb/
+
+# ── ML assets (large binaries) ───────────────────────────────────────────────
+models/
+model/
 NeMo/
 
+# ── Source data (documents & training sets) ──────────────────────────────────
+data/
+dataset/
+
+# ── Node / web_ui ────────────────────────────────────────────────────────────
+node_modules/
+
+# ── File types ───────────────────────────────────────────────────────────────
 *.odt
-*.txt
 *.pdf
 *.log
+*.wav
 *.json
 *.jsonl
-*.wav
+*.txt
 
+# ── Secrets & local config ───────────────────────────────────────────────────
 .env
 .python-version
 
+# ── Notebooks ────────────────────────────────────────────────────────────────
 testing.ipynb
 
+# ── Exceptions ───────────────────────────────────────────────────────────────
 !requirements.txt
