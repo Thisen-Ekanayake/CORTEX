@@ -2,8 +2,6 @@
 ASCII art logo for CORTEX - Futuristic Design with Colors
 """
 
-from rich.text import Text
-
 # Logo without the border box (Panel will provide the border)
 
 CORTEX_LOGO_TEXT = """
