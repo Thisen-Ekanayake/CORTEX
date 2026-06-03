@@ -16,6 +16,11 @@ python-docx==1.2.0
 # LLM Backend
 llama-cpp-python==0.3.16
 
+# Web API (cortex_api service)
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+
 # UI Libraries
 textual==7.4.0
 rich==14.3.1
