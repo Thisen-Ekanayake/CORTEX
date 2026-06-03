@@ -8,8 +8,8 @@ try:
     from .clip_retrieval_local import index_local_images, retrieve_local
     from .google_search import fetch_google_images
 except ImportError:
-    from clip_retrieval_local import index_local_images, retrieve_local
-    from google_search import fetch_google_images
+    from clip_retrieval_local import index_local_images, retrieve_local  # type: ignore[no-redef]
+    from google_search import fetch_google_images  # type: ignore[no-redef]
 
 from cortex.config import IMAGE_CACHE_DIR
 

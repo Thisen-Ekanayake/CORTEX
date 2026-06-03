@@ -66,13 +66,13 @@ def print_logo(animate=False):
         logo_lines.pop()
 
     # Find the leftmost character position (minimum leading whitespace)
-    min_leading = float("inf")
+    min_leading: int | None = None
     for line in logo_lines:
         if line.strip():  # Only consider non-empty lines
             leading = len(line) - len(line.lstrip())
-            min_leading = min(min_leading, leading)
+            min_leading = leading if min_leading is None else min(min_leading, leading)
 
-    if min_leading == float("inf"):
+    if min_leading is None:
         min_leading = 0
 
     # Normalize: remove minimum leading whitespace from all lines
@@ -323,7 +323,7 @@ def stream_response(query: str):
         query: User query string to process.
     """
     response_buffer = ""
-    token_queue = queue.Queue()
+    token_queue: queue.Queue = queue.Queue()
     stream_complete = threading.Event()
 
     def on_token(token: str):

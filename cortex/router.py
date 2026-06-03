@@ -179,11 +179,11 @@ def execute(
     if route is not None:
         if route == Route.RAG_IMG:
             result = run_rag_mode(query, mode="image", callbacks=callbacks)
-            return result, route, {}
+            return result, route, {}  # type: ignore[return-value]
 
         if route in {Route.RAG, Route.RAG_DOC}:
             result = run_rag_mode(query, mode="document", callbacks=callbacks)
-            return result, route, {}
+            return result, route, {}  # type: ignore[return-value]
 
         if route == Route.META:
             result = run_meta(query, callbacks=callbacks)

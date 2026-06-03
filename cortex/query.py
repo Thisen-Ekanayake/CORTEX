@@ -185,6 +185,7 @@ def search_with_scores(query: str, k: int = 5) -> list[dict]:
         List of dicts: {source, page, snippet, score} ordered by relevance.
     """
     get_retriever()  # ensures the module-level vectorstore is initialized
+    assert _vectorstore is not None  # populated by get_retriever()
     results = _vectorstore.similarity_search_with_relevance_scores(query, k=k)
 
     hits = []

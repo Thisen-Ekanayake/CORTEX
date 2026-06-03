@@ -57,7 +57,7 @@ class RLRouter:
         os.makedirs(feedback_dir, exist_ok=True)
 
         # Feedback storage
-        self.feedback_history = deque(maxlen=memory_size)
+        self.feedback_history: deque = deque(maxlen=memory_size)
         self.feedback_file = os.path.join(feedback_dir, "feedback.jsonl")
         self.metrics_file = os.path.join(feedback_dir, "metrics.json")
 
