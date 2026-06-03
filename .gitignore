@@ -59,3 +59,5 @@ testing.ipynb
 !web_ui/package.json
 !web_ui/package-lock.json
 !web_ui/tsconfig.json
+# web_ui mock/placeholder data imported by the UI (the root `data/` rule must not catch it)
+!web_ui/src/data/
