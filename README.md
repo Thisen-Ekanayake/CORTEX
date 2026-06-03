@@ -15,6 +15,7 @@ CORTEX is an AI assistant that combines document retrieval with language models 
 - **Conversation Memory**: Maintains context of recent interactions
 - **Multiple Interfaces**: Rich interactive CLI, minimal CLI, and RL training interface
 - **Multimodal Tools**: Image search, speech-to-text, text-to-speech, and vision-language reasoning utilities
+- **Web Interface & REST API**: A FastAPI service (`cortex_api/`) exposes chat (SSE streaming), document upload/ingestion, semantic search, speech-to-text, text-to-speech, and vision-language Q&A to a React + Vite dashboard (`web_ui/`)
 
 ## Architecture
 
@@ -45,6 +46,16 @@ CORTEX is an AI assistant that combines document retrieval with language models 
 - Uses Q-learning style updates to improve routing accuracy
 - Persists feedback and metrics for continuous learning
 
+### Web Pipeline
+
+- **`cortex_api/`**: FastAPI service that exposes the core AI pipeline over HTTP for the web UI. It is separate from `backend/` (user management) and **must be launched from the repository root** so that the model and `chroma_db/` paths resolve. Runs on port 8001; heavy models load lazily on first request. Endpoints (under `/api`):
+  - `POST /chat` — routed RAG/CHAT/META answer, streamed token-by-token over Server-Sent Events with the chosen route and source citations
+  - `GET /documents`, `POST /documents` — list the corpus and upload + ingest a new file into the vector store
+  - `POST /search` — semantic search returning ranked chunks with relevance scores
+  - `POST /stt`, `POST /tts` — Parakeet speech-to-text and Coqui text-to-speech
+  - `POST /vlm` — Qwen2.5-VL image + text question answering
+- **`web_ui/`**: React 18 + TypeScript + Vite dashboard (chat, documents, search, voice, vision) wired to `cortex_api` through a `/api` dev-server proxy.
+
 ### Extended Tools
 
 - **Image Search (`image_search/`)**
@@ -57,8 +68,8 @@ CORTEX is an AI assistant that combines document retrieval with language models 
 - **Text-to-Speech (`text_to_speech/`)**
   - `text_to_speech.py`: `TextToSpeech` wrapper around Coqui TTS with file synthesis and local playback helpers.
   - `testing.py`: Minimal example that synthesizes a sample sentence to `logs/output.wav`.
-- **Vision-Language Inference (`vl_inference.py`)**
-  - Qwen2.5-VL-3B-based script for image understanding and image+text question answering with 4-bit quantization for efficient GPU usage.
+- **Vision-Language Inference (`image_understanding/vlm.py`)**
+  - `describe_image()`: Qwen2.5-VL-3B image understanding and image+text question answering with 4-bit quantization, loaded lazily as a singleton. `vl_inference.py` remains as a thin CLI wrapper (`python vl_inference.py <image> [prompt]`).
 
 ## Usage
 
@@ -93,6 +104,18 @@ python speech_to_text/record_and_transcribe.py
 python text_to_speech/testing.py
 ```
 
+### Web Interface
+
+Run the AI API and the dashboard in two terminals:
+
+```bash
+# AI API — launch from the repository root so model/chroma_db paths resolve (port 8001)
+uvicorn cortex_api.main:app --port 8001 --reload
+
+# Web dashboard — the Vite dev server proxies /api to port 8001
+cd web_ui && npm install && npm run dev   # http://localhost:5173
+```
+
 ### Query Routing
 
 The system automatically routes queries into three categories:
@@ -116,6 +139,7 @@ The router uses TF-IDF classification with confidence scores. Low-confidence pre
 
 ```
 cortex/
+├── __init__.py        # Package marker
 ├── embeddings.py      # Embedding model initialization
 ├── ingest.py          # Document ingestion pipeline
 ├── llm.py            # LLM setup and configuration
@@ -132,6 +156,8 @@ cortex/
 └── rl_dashboard.py   # RL visualization dashboard
 ```
 
+Other top-level packages: `cortex_api/` (FastAPI AI service), `image_understanding/` (Qwen2.5-VL), `image_search/`, `speech_to_text/`, `text_to_speech/`, `backend/` (user-management API), and `web_ui/` (React dashboard).
+
 ## Requirements
 
 See `requirements.txt` for full dependencies. Key libraries:
@@ -140,3 +166,4 @@ See `requirements.txt` for full dependencies. Key libraries:
 - transformers, torch
 - rich (for UI)
 - scikit-learn, joblib (for routing)
+- fastapi, uvicorn (for the `cortex_api` web service)
