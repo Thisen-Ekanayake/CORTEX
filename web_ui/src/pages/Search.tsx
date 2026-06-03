@@ -2,27 +2,38 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card } from '../components/ui/Card'
-import { searchResults } from '../data/placeholder'
+import { search as searchApi, type SearchHit } from '../lib/api'
 import './pages.css'
 
 export function Search() {
   const [searchParams] = useSearchParams()
   const q = searchParams.get('q') ?? ''
   const [query, setQuery] = useState(q)
-  const [results, setResults] = useState<typeof searchResults>([])
+  const [results, setResults] = useState<SearchHit[]>([])
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     setQuery(q)
-    if (q) {
-      setLoading(true)
-      const t = setTimeout(() => {
-        setResults(searchResults.map((r) => ({ ...r, score: 0.8 + Math.random() * 0.2 })))
-        setLoading(false)
-      }, 600)
-      return () => clearTimeout(t)
-    } else {
+    if (!q) {
       setResults([])
+      return
+    }
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+    searchApi(q)
+      .then((hits) => {
+        if (!cancelled) setResults(hits)
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Search failed')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
     }
   }, [q])
 
@@ -35,7 +46,7 @@ export function Search() {
     >
       <h2 className="page__title">Search</h2>
       <p className="page__subtitle">
-        Fast query with animated results. Try a question or keyword.
+        Semantic search across your ingested documents, ranked by relevance.
       </p>
 
       <div className="search-box">
@@ -57,6 +68,8 @@ export function Search() {
           ⌕ Search
         </button>
       </div>
+
+      {error && <p className="page__error">{error}</p>}
 
       {loading && (
         <motion.div
@@ -82,14 +95,16 @@ export function Search() {
           >
             {results.map((r, i) => (
               <motion.li
-                key={r.id}
+                key={i}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
               >
                 <Card>
                   <div className="search-result">
-                    <h4 className="search-result__title">{r.title}</h4>
+                    <h4 className="search-result__title">
+                      {r.source}{r.page ? ` · p.${r.page}` : ''}
+                    </h4>
                     <p className="search-result__snippet">{r.snippet}</p>
                     <div className="search-result__meta">
                       <span className="search-result__source">{r.source}</span>
@@ -101,7 +116,7 @@ export function Search() {
             ))}
           </motion.ul>
         )}
-        {!loading && q && results.length === 0 && (
+        {!loading && !error && q && results.length === 0 && (
           <motion.p
             className="page__empty"
             initial={{ opacity: 0 }}

@@ -1,8 +1,18 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { chatStream, tts, vlm } from '../lib/api'
+import { VoiceCommand } from '../components/voice/VoiceCommand'
 
-// Placeholder data
-const INITIAL_MESSAGES = [
+interface Message {
+  id: number
+  role: 'user' | 'assistant'
+  content: string
+  route?: string
+  sources?: string[]
+  imageUrl?: string
+}
+
+const INITIAL_MESSAGES: Message[] = [
   {
     id: 1,
     role: 'assistant',
@@ -11,38 +21,96 @@ const INITIAL_MESSAGES = [
 ]
 
 export function Chat() {
-  const [messages, setMessages] = useState(INITIAL_MESSAGES)
+  const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES)
   const [input, setInput] = useState('')
   const [isThinking, setIsThinking] = useState(false)
   const [thinkingStep, setThinkingStep] = useState('')
+  const [speakingId, setSpeakingId] = useState<number | null>(null)
+  const [attachedImage, setAttachedImage] = useState<File | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isThinking])
 
+  const speak = async (msg: Message) => {
+    if (!msg.content.trim()) return
+    audioRef.current?.pause()
+    setSpeakingId(msg.id)
+    try {
+      const url = await tts(msg.content)
+      const audio = new Audio(url)
+      audioRef.current = audio
+      audio.onended = () => setSpeakingId(null)
+      audio.onerror = () => setSpeakingId(null)
+      await audio.play()
+    } catch {
+      setSpeakingId(null)
+    }
+  }
+
+  const patchMessage = (id: number, patch: Partial<Message>) => {
+    setMessages(prev => prev.map(m => (m.id === id ? { ...m, ...patch } : m)))
+  }
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!input.trim() || isThinking) return
+    if (isThinking) return
+    if (!input.trim() && !attachedImage) return
 
-    const userMsg = { id: Date.now(), role: 'user', content: input.trim() }
-    setMessages(prev => [...prev, userMsg])
+    const image = attachedImage
+    const prompt = input.trim() || (image ? 'Describe this image.' : '')
+
+    const userMsg: Message = {
+      id: Date.now(),
+      role: 'user',
+      content: prompt,
+      imageUrl: image ? URL.createObjectURL(image) : undefined,
+    }
+    const assistantId = userMsg.id + 1
+    setMessages(prev => [...prev, userMsg, { id: assistantId, role: 'assistant', content: '' }])
     setInput('')
+    setAttachedImage(null)
     setIsThinking(true)
-    setThinkingStep('Analyzing request...')
 
-    // Simulate AI processing
-    setTimeout(() => setThinkingStep('Searching knowledge base...'), 800)
-    setTimeout(() => setThinkingStep('Generating response...'), 1600)
+    // ── Vision path: an image is attached → Qwen2.5-VL ──
+    if (image) {
+      setThinkingStep('Analyzing image...')
+      try {
+        const description = await vlm(image, prompt)
+        patchMessage(assistantId, { content: description, route: 'vlm' })
+      } catch (err) {
+        patchMessage(assistantId, { content: `⚠️ ${err instanceof Error ? err.message : 'Vision request failed'}` })
+      } finally {
+        setIsThinking(false)
+      }
+      return
+    }
 
-    setTimeout(() => {
-      setIsThinking(false)
-      setMessages(prev => [...prev, {
-        id: Date.now() + 1,
-        role: 'assistant',
-        content: "I've analyzed your request. Based on the available data, I can confirm that the Q3 financial report shows a 15% increase in revenue. Would you like a detailed breakdown?"
-      }])
-    }, 2500)
+    // ── Text path: routed RAG/CHAT/META streaming ──
+    setThinkingStep('Routing query...')
+    let streamed = false
+    await chatStream(prompt, {
+      onToken: (token) => {
+        if (!streamed) {
+          streamed = true
+          setIsThinking(false)
+        }
+        setMessages(prev =>
+          prev.map(m => (m.id === assistantId ? { ...m, content: m.content + token } : m))
+        )
+      },
+      onDone: (info) => {
+        setIsThinking(false)
+        patchMessage(assistantId, { route: info.route, sources: info.sources })
+      },
+      onError: (message) => {
+        setIsThinking(false)
+        patchMessage(assistantId, { content: `⚠️ ${message}` })
+      },
+    })
   }
 
   return (
@@ -56,7 +124,7 @@ export function Chat() {
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 scroll-smooth custom-scrollbar relative">
         <div className="max-w-4xl mx-auto space-y-10">
-          {messages.map((msg) => (
+          {messages.filter((msg) => !(msg.role === 'assistant' && msg.content === '')).map((msg) => (
             <motion.div
               key={msg.id}
               initial={{ opacity: 0, y: 20, scale: 0.98 }}
@@ -84,13 +152,58 @@ export function Chat() {
                   }
                   max-w-full lg:max-w-2xl
                 `}>
+                  {msg.imageUrl && (
+                    <img
+                      src={msg.imageUrl}
+                      alt="attached"
+                      className="mb-2 max-h-48 rounded-xl border border-white/10 object-cover"
+                    />
+                  )}
                   {msg.content}
                 </div>
 
-                {/* Message Meta */}
-                <span className="text-[10px] uppercase tracking-wider text-text-tertiary font-medium px-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {msg.role === 'assistant' ? 'CORTEX AI' : 'YOU'} • JUST NOW
-                </span>
+                {/* Route + sources (assistant, after streaming completes) */}
+                {msg.role === 'assistant' && (msg.route || (msg.sources && msg.sources.length > 0)) && (
+                  <div className="flex flex-col gap-1.5 px-1 max-w-full lg:max-w-2xl">
+                    {msg.route && (
+                      <span className="self-start text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-md bg-accent-primary/10 text-accent-primary border border-accent-primary/20">
+                        {msg.route.replace('_', ' ')}
+                      </span>
+                    )}
+                    {msg.sources && msg.sources.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {msg.sources.map((src, i) => (
+                          <span
+                            key={i}
+                            className="text-[11px] text-text-secondary bg-white/[0.04] border border-white/10 rounded-lg px-2 py-1"
+                            title={src}
+                          >
+                            ◈ {src}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Message Meta + actions */}
+                <div className="flex items-center gap-2 px-1">
+                  <span className="text-[10px] uppercase tracking-wider text-text-tertiary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                    {msg.role === 'assistant' ? 'CORTEX AI' : 'YOU'} • JUST NOW
+                  </span>
+                  {msg.role === 'assistant' && msg.content.trim() && (
+                    <button
+                      type="button"
+                      onClick={() => speak(msg)}
+                      disabled={speakingId === msg.id}
+                      title="Read aloud"
+                      aria-label="Read aloud"
+                      className="text-[12px] text-text-tertiary hover:text-accent-primary transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-100"
+                    >
+                      {speakingId === msg.id ? '◼ speaking…' : '🔊'}
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Avatar for User */}
@@ -150,11 +263,39 @@ export function Chat() {
             <div className="absolute inset-0 bg-accent-primary/0 group-focus-within:bg-accent-primary/[0.02] transition-colors pointer-events-none" />
 
             <form onSubmit={handleSend} className="relative flex flex-col gap-2">
+              {attachedImage && (
+                <div className="flex items-center gap-2 px-3 pt-1">
+                  <span className="text-[11px] text-accent-primary bg-accent-primary/10 border border-accent-primary/20 rounded-lg px-2 py-1">
+                    🖼 {attachedImage.name}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setAttachedImage(null)}
+                    className="text-[11px] text-text-tertiary hover:text-text-primary"
+                    aria-label="Remove attached image"
+                  >
+                    ✕ remove
+                  </button>
+                </div>
+              )}
               <div className="flex items-end gap-2 px-2">
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0]
+                    if (f) setAttachedImage(f)
+                    if (imageInputRef.current) imageInputRef.current.value = ''
+                  }}
+                />
                 <button
                   type="button"
+                  onClick={() => imageInputRef.current?.click()}
                   className="p-2.5 text-text-tertiary hover:text-text-primary transition-all rounded-xl hover:bg-white/5 shrink-0"
-                  aria-label="Add context"
+                  aria-label="Attach image"
+                  title="Attach image (Vision)"
                 >
                   <span className="text-xl">＋</span>
                 </button>
@@ -193,7 +334,12 @@ export function Chat() {
 
               {/* Toolbar Bottom */}
               <div className="flex items-center justify-between px-3 pb-1 border-t border-white/[0.03] pt-2">
-                <div className="flex gap-3">
+                <div className="flex gap-3 items-center">
+                  <VoiceCommand
+                    onTranscript={(text) =>
+                      setInput((prev) => (prev ? `${prev} ${text}` : text))
+                    }
+                  />
                   <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg hover:bg-white/5 text-[11px] text-text-tertiary transition-colors cursor-pointer">
                     <span className="w-1.5 h-1.5 border border-text-tertiary rounded-sm" />
                     <span>SEARCH</span>
