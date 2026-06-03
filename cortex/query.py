@@ -178,6 +178,40 @@ def run_rag(query: str, callbacks: Optional[List[Any]] = None) -> Optional[str]:
 
 
 # -------------------------
+# Scored semantic search
+# -------------------------
+def search_with_scores(query: str, k: int = 5) -> List[dict]:
+    """
+    Semantic search returning ranked chunks with relevance scores.
+
+    Unlike the retriever used by the RAG chain (which hides scores), this
+    exposes the similarity score for each hit so the UI can rank/visualize
+    results.
+
+    Args:
+        query: Search string.
+        k: Maximum number of hits to return.
+
+    Returns:
+        List of dicts: {source, page, snippet, score} ordered by relevance.
+    """
+    get_retriever()  # ensures the module-level vectorstore is initialized
+    results = _vectorstore.similarity_search_with_relevance_scores(query, k=k)
+
+    hits = []
+    for doc, score in results:
+        hits.append(
+            {
+                "source": doc.metadata.get("source", "unknown"),
+                "page": str(doc.metadata.get("page", "")),
+                "snippet": doc.page_content.strip()[:300],
+                "score": float(score),
+            }
+        )
+    return hits
+
+
+# -------------------------
 # Source citations
 # -------------------------
 def get_sources(query: str) -> List[str]:
