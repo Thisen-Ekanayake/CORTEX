@@ -1,5 +1,5 @@
 import logging
-from typing import Any, List, Optional, Union
+from typing import Any
 
 import torch
 from langchain_community.llms.llamacpp import LlamaCpp
@@ -12,9 +12,9 @@ logger = logging.getLogger(__name__)
 
 def get_llm(
     streaming: bool = False,
-    callbacks: Optional[List[Any]] = None,
+    callbacks: list[Any] | None = None,
     cpu_fallback: bool = True,
-) -> Union[LlamaCpp, Any]:
+) -> LlamaCpp | Any:
     """
     Get or initialize the language model instance.
 

@@ -1,16 +1,15 @@
+import argparse
 import logging
 import os
-import argparse
-from typing import List, Tuple
 
 import requests
 
 try:
-    from .google_search import fetch_google_images
     from .clip_retrieval_local import index_local_images, retrieve_local
+    from .google_search import fetch_google_images
 except ImportError:
-    from google_search import fetch_google_images
     from clip_retrieval_local import index_local_images, retrieve_local
+    from google_search import fetch_google_images
 
 from cortex.config import IMAGE_CACHE_DIR
 
@@ -19,7 +18,7 @@ logger = logging.getLogger(__name__)
 os.makedirs(IMAGE_CACHE_DIR, exist_ok=True)
 
 
-def download_images(urls: List[str]) -> List[str]:
+def download_images(urls: list[str]) -> list[str]:
     """
     Download images from URLs and save them to cache directory.
 
@@ -53,7 +52,7 @@ def search_and_retrieve(
     prompt: str,
     num_images: int = 20,
     top_k: int = 5,
-) -> List[Tuple[str, float]]:
+) -> list[tuple[str, float]]:
     """
     Search Google Images, download them, and retrieve top matches using CLIP.
 
@@ -78,9 +77,7 @@ def search_and_retrieve(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Google image search + CLIP-based local retrieval"
-    )
+    parser = argparse.ArgumentParser(description="Google image search + CLIP-based local retrieval")
     parser.add_argument(
         "--prompt",
         type=str,

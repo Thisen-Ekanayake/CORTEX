@@ -1,20 +1,15 @@
 import os
-from typing import List
 
-from langchain_community.document_loaders import (
-    PyPDFLoader,
-    TextLoader,
-    Docx2txtLoader
-)
+from langchain_community.document_loaders import Docx2txtLoader, PyPDFLoader, TextLoader
+from langchain_community.vectorstores import Chroma
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Chroma
 
 from cortex.config import DATA_DIR, PERSIST_DIR
 from cortex.embeddings import get_embeddings
 
 
-def load_file(path: str) -> List[Document]:
+def load_file(path: str) -> list[Document]:
     """
     Load a single document file.
 
@@ -45,7 +40,7 @@ def load_file(path: str) -> List[Document]:
     return docs
 
 
-def load_documents() -> List[Document]:
+def load_documents() -> list[Document]:
     """
     Load every supported document from the data directory.
 
@@ -95,14 +90,14 @@ def ingest_file(path: str) -> int:
 def ingest():
     """
     Ingest documents into the vector database.
-    
+
     This function performs the complete ingestion pipeline:
     1. Loads documents from the data directory
     2. Splits documents into chunks (1200 chars with 200 char overlap)
     3. Generates embeddings for each chunk
     4. Stores embeddings in ChromaDB vector store
     5. Persists the vector store to disk
-    
+
     Prints progress messages throughout the process.
     """
     print("Loading documents...")
@@ -114,10 +109,7 @@ def ingest():
 
     print(f"Loaded {len(documents)} documents")
 
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1200,
-        chunk_overlap=200
-    )
+    splitter = RecursiveCharacterTextSplitter(chunk_size=1200, chunk_overlap=200)
 
     chunks = splitter.split_documents(documents)
     print(f"Split into {len(chunks)} chunks")
@@ -125,9 +117,7 @@ def ingest():
     embeddings = get_embeddings()
 
     vectorstore = Chroma.from_documents(
-        documents=chunks,
-        embedding=embeddings,
-        persist_directory=PERSIST_DIR
+        documents=chunks, embedding=embeddings, persist_directory=PERSIST_DIR
     )
 
     vectorstore.persist()

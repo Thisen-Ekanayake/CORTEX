@@ -1,6 +1,6 @@
-import os
 import argparse
 import logging
+import os
 
 from cortex.ingest import ingest
 from cortex.router import execute

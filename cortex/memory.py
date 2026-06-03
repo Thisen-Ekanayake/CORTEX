@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List
 
 
 @dataclass
@@ -34,7 +33,7 @@ class ConversationMemory:
         Args:
             max_items: Maximum number of conversation items to retain (default: 50).
         """
-        self.history: List[MemoryItem] = []
+        self.history: list[MemoryItem] = []
         self.max_items = max_items
 
     def add(self, query: str, answer: str) -> None:
@@ -55,9 +54,9 @@ class ConversationMemory:
                 timestamp=datetime.now().strftime("%H:%M:%S"),
             )
         )
-        self.history = self.history[-self.max_items:]
+        self.history = self.history[-self.max_items :]
 
-    def all_queries(self) -> List[str]:
+    def all_queries(self) -> list[str]:
         """
         Get all queries from conversation history.
 

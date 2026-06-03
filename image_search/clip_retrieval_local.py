@@ -1,34 +1,32 @@
-import os
 import argparse
+import os
+
 import torch
 from PIL import Image
-from transformers import CLIPProcessor, CLIPModel
+from transformers import CLIPModel, CLIPProcessor
 
 # LOAD MODEL ONCE
-model = CLIPModel.from_pretrained(
-    "/ml/CORTEX/models/CLIP-vit-large-patch14",
-    local_files_only=True
-)
+model = CLIPModel.from_pretrained("/ml/CORTEX/models/CLIP-vit-large-patch14", local_files_only=True)
 processor = CLIPProcessor.from_pretrained(
-    "/ml/CORTEX/models/CLIP-vit-large-patch14",
-    local_files_only=True
+    "/ml/CORTEX/models/CLIP-vit-large-patch14", local_files_only=True
 )
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model.to(device)
 model.eval()
 
+
 def index_local_images(dir_path):
     """
     Index all images in a directory using CLIP embeddings.
-    
+
     Processes all images in the given directory, generates CLIP embeddings
     for each, and returns them along with their file paths. Images that
     cannot be opened are silently skipped.
-    
+
     Args:
         dir_path: Directory path containing images to index.
-    
+
     Returns:
         tuple: (embeddings_tensor, paths_list)
             - embeddings_tensor: PyTorch tensor of normalized image embeddings
@@ -58,27 +56,24 @@ def index_local_images(dir_path):
 
     return None, []
 
+
 def retrieve_local(prompt, image_embeddings, image_paths, top_k=5):
     """
     Retrieve top-k most similar images for a text prompt using CLIP.
-    
+
     Computes text embedding for the prompt, then finds the most similar
     images using cosine similarity between text and image embeddings.
-    
+
     Args:
         prompt: Text query string.
         image_embeddings: Pre-computed image embeddings tensor.
         image_paths: List of image file paths corresponding to embeddings.
         top_k: Number of top results to return (default: 5).
-    
+
     Returns:
         list: List of tuples (image_path, similarity_score) sorted by score descending.
     """
-    text_inputs = processor(
-        text=[prompt],
-        return_tensors="pt",
-        padding=True
-    ).to(device)
+    text_inputs = processor(text=[prompt], return_tensors="pt", padding=True).to(device)
 
     with torch.no_grad():
         text_emb = model.get_text_features(**text_inputs)
@@ -90,26 +85,14 @@ def retrieve_local(prompt, image_embeddings, image_paths, top_k=5):
 
     return [(image_paths[i], float(top_scores[j])) for j, i in enumerate(top_idxs)]
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="CLIP local image retrieval")
+    parser.add_argument("--prompt", type=str, required=True, help="Text prompt for image retrieval")
     parser.add_argument(
-        "--prompt",
-        type=str,
-        required=True,
-        help="Text prompt for image retrieval"
+        "--images_dir", type=str, default="data/images", help="Directory containing images"
     )
-    parser.add_argument(
-        "--images_dir",
-        type=str,
-        default="data/images",
-        help="Directory containing images"
-    )
-    parser.add_argument(
-        "--top_k",
-        type=int,
-        default=5,
-        help="Number of results to return"
-    )
+    parser.add_argument("--top_k", type=int, default=5, help="Number of results to return")
 
     args = parser.parse_args()
 
@@ -117,12 +100,7 @@ if __name__ == "__main__":
     if image_embeddings is None:
         raise RuntimeError("No valid images found.")
 
-    results = retrieve_local(
-        args.prompt,
-        image_embeddings,
-        image_paths,
-        top_k=args.top_k
-    )
+    results = retrieve_local(args.prompt, image_embeddings, image_paths, top_k=args.top_k)
 
     for path, score in results:
         print(f"{score:.3f} — {path}")

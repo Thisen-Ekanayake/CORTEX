@@ -3,14 +3,11 @@ Interactive CLI for CORTEX with Reinforcement Learning.
 User selects the actual category while the model learns from feedback.
 """
 
-from typing import Dict, Optional
-
+from cortex.query import get_sources
+from cortex.rl_router import RLRouter, get_rl_router
 from cortex.router import Route, execute
 from cortex.streaming import StreamHandler
-from cortex.rl_router import get_rl_router, RLRouter
-from cortex.query import get_sources
 from text_to_speech.text_to_speech import TextToSpeech
-
 
 # ANSI color codes
 RESET = "\033[0m"
@@ -57,45 +54,49 @@ def format_confidence_bar(confidence: float, width: int = 20) -> str:
     return bar
 
 
-def print_prediction_panel(route: Route, scores: Dict[str, float]):
+def print_prediction_panel(route: Route, scores: dict[str, float]):
     """
     Display model's prediction with confidence scores.
-    
+
     Args:
         route: Predicted route
         scores: Confidence scores for all routes
     """
     print(f"\n{BOLD}┌─ Model Prediction ─────────────────────────────────────────┐{RESET}")
-    
+
     # Show predicted route prominently
     color = ROUTE_COLORS.get(route, RESET)
     confidence = scores[route.value]
-    print(f"│ {BOLD}{color}► Predicted: {route.value.upper():<8}{RESET} "
-          f"{color}(Confidence: {confidence:.1%}){RESET}")
+    print(
+        f"│ {BOLD}{color}► Predicted: {route.value.upper():<8}{RESET} "
+        f"{color}(Confidence: {confidence:.1%}){RESET}"
+    )
     print(f"│{RESET}")
-    
+
     # Show all confidence scores
     print(f"│ {DIM}Confidence Breakdown:{RESET}")
     sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-    
+
     for route_name, conf in sorted_scores:
         route_obj = Route(route_name)
         color = ROUTE_COLORS.get(route_obj, RESET)
         bar = format_confidence_bar(conf)
-        
+
         if route_name == route.value:
-            print(f"│   {BOLD}{color}► {route_name.upper():<6}{RESET} "
-                  f"{color}{bar}{RESET} {BOLD}{conf:.1%}{RESET}")
+            print(
+                f"│   {BOLD}{color}► {route_name.upper():<6}{RESET} "
+                f"{color}{bar}{RESET} {BOLD}{conf:.1%}{RESET}"
+            )
         else:
             print(f"│   {DIM}  {route_name.upper():<6} {bar} {conf:.1%}{RESET}")
-    
+
     print(f"└────────────────────────────────────────────────────────────┘{RESET}\n")
 
 
-def get_user_category_selection() -> Optional[Route]:
+def get_user_category_selection() -> Route | None:
     """
     Prompt user to select the actual category.
-    
+
     Returns:
         Selected Route or None if cancelled
     """
@@ -105,11 +106,11 @@ def get_user_category_selection() -> Optional[Route]:
     print(f"  {YELLOW}[3]{RESET} META    - About the system")
     print(f"  {GREEN}[4]{RESET} CHAT    - General conversation")
     print(f"  {DIM}[0]{RESET} {DIM}Cancel{RESET}")
-    
+
     while True:
         try:
             choice = input(f"\n{BOLD}Your choice [1-4, 0 to cancel]:{RESET} ").strip()
-            
+
             if choice == "0":
                 return None
             elif choice == "1":
@@ -129,14 +130,14 @@ def get_user_category_selection() -> Optional[Route]:
 def print_feedback_result(predicted: Route, actual: Route, reward: float):
     """
     Show the learning feedback result.
-    
+
     Args:
         predicted: What model predicted
         actual: What user selected
         reward: Reward/penalty given
     """
-    correct = (predicted == actual)
-    
+    correct = predicted == actual
+
     if correct:
         icon = "✓"
         color = GREEN
@@ -147,70 +148,74 @@ def print_feedback_result(predicted: Route, actual: Route, reward: float):
         color = RED
         status = "INCORRECT"
         emoji = "📚"
-    
+
     print(f"\n{BOLD}┌─ Learning Feedback ────────────────────────────────────────┐{RESET}")
     print(f"│ {color}{BOLD}{icon} {status}{RESET} {emoji}")
-    print(f"│")
+    print("│")
     print(f"│ Predicted: {ROUTE_COLORS[predicted]}{predicted.value.upper()}{RESET}")
     print(f"│ Actual:    {ROUTE_COLORS[actual]}{actual.value.upper()}{RESET}")
-    print(f"│")
-    
+    print("│")
+
     if reward > 0:
         reward_color = GREEN
         reward_sign = "+"
     else:
         reward_color = RED
         reward_sign = ""
-    
+
     print(f"│ Reward: {reward_color}{reward_sign}{reward:.2f}{RESET}")
-    
+
     if correct:
         print(f"│ {DIM}Model confidence weights adjusted (reinforced){RESET}")
     else:
         print(f"│ {DIM}Model weights updated (learning from mistake){RESET}")
-    
+
     print(f"└────────────────────────────────────────────────────────────┘{RESET}\n")
 
 
 def print_statistics(rl_router: RLRouter):
     """Print current model statistics."""
     metrics = rl_router.get_metrics()
-    
+
     print(f"\n{BOLD}{CYAN}┌─ Model Statistics ─────────────────────────────────────────┐{RESET}")
     print(f"{CYAN}│{RESET}")
-    
+
     # Overall accuracy
     overall = metrics["overall_accuracy"]
     total = metrics["total_predictions"]
     correct = metrics["correct_predictions"]
-    
+
     if overall >= 0.8:
         acc_color = GREEN
     elif overall >= 0.6:
         acc_color = YELLOW
     else:
         acc_color = RED
-    
-    print(f"{CYAN}│{RESET} {BOLD}Overall Accuracy:{RESET} {acc_color}{overall:.1%}{RESET} "
-          f"({correct}/{total} correct)")
+
+    print(
+        f"{CYAN}│{RESET} {BOLD}Overall Accuracy:{RESET} {acc_color}{overall:.1%}{RESET} "
+        f"({correct}/{total} correct)"
+    )
     print(f"{CYAN}│{RESET}")
-    
+
     # Per-route accuracy
     print(f"{CYAN}│{RESET} {BOLD}Per-Category Performance:{RESET}")
     route_metrics = metrics["route_accuracy"]
-    
+
     for route_name in ["rag", "rag_doc", "rag_img", "meta", "chat"]:
         stats = route_metrics.get(route_name, {"accuracy": 0.0, "total": 0, "correct": 0})
         acc = stats["accuracy"]
         route = Route(route_name)
         color = ROUTE_COLORS[route]
-        
+
         bar = format_confidence_bar(acc, width=15)
-        print(f"{CYAN}│{RESET}   {color}{route_name.upper():<6}{RESET} "
-              f"{bar} {acc:.1%} ({stats['correct']}/{stats['total']})")
-    
+        print(
+            f"{CYAN}│{RESET}   {color}{route_name.upper():<6}{RESET} "
+            f"{bar} {acc:.1%} ({stats['correct']}/{stats['total']})"
+        )
+
     print(f"{CYAN}│{RESET}")
-    
+
     # Confidence weights (learned adjustments)
     print(f"{CYAN}│{RESET} {BOLD}Learned Confidence Weights:{RESET}")
     weights = metrics["confidence_weights"]
@@ -218,7 +223,7 @@ def print_statistics(rl_router: RLRouter):
         weight = weights.get(route_name, 1.0)
         route = Route(route_name)
         color = ROUTE_COLORS[route]
-        
+
         # Weight > 1.0 means model is boosting this category
         # Weight < 1.0 means model is reducing confidence
         if weight > 1.0:
@@ -227,10 +232,12 @@ def print_statistics(rl_router: RLRouter):
             weight_indicator = f"{RED}↓{RESET}"
         else:
             weight_indicator = "→"
-        
-        print(f"{CYAN}│{RESET}   {color}{route_name.upper():<6}{RESET} "
-              f"{weight:.3f} {weight_indicator}")
-    
+
+        print(
+            f"{CYAN}│{RESET}   {color}{route_name.upper():<6}{RESET} "
+            f"{weight:.3f} {weight_indicator}"
+        )
+
     print(f"{CYAN}└────────────────────────────────────────────────────────────┘{RESET}\n")
 
 
@@ -246,19 +253,11 @@ def execute_with_streaming(query: str, route: Route) -> str:
 
     if route == Route.RAG_IMG:
         # Image retrieval is NOT streamable
-        result, _, _ = execute(
-            query,
-            route=route,
-            callbacks=None
-        )
+        result, _, _ = execute(query, route=route, callbacks=None)
         print(result)
     else:
         handler = StreamHandler(on_token=on_token)
-        result, _, _ = execute(
-            query,
-            route=route,
-            callbacks=[handler]
-        )
+        result, _, _ = execute(query, route=route, callbacks=[handler])
 
     print("\n")  # New line after streaming
 
@@ -274,8 +273,10 @@ def execute_with_streaming(query: str, route: Route) -> str:
                 print(f"{DIM}┌─ Document Sources ─────────────────────────────────────────┐{RESET}")
                 for i, source in enumerate(sources, 1):
                     print(f"{DIM}│{RESET} {CYAN}[{i}]{RESET} {source}")
-                print(f"{DIM}└────────────────────────────────────────────────────────────┘{RESET}\n")
-        except Exception as e:
+                print(
+                    f"{DIM}└────────────────────────────────────────────────────────────┘{RESET}\n"
+                )
+        except Exception:
             # Silently fail if sources can't be retrieved
             pass
 
@@ -297,80 +298,80 @@ def execute_with_streaming(query: str, route: Route) -> str:
 def main():
     """Main interactive loop."""
     print_header()
-    
+
     # Initialize RL router
     rl_router = get_rl_router(learning_rate=0.15)
-    
+
     # Show initial stats if there's prior learning
     if rl_router.total_predictions > 0:
         print(f"{YELLOW}📊 Loaded existing learning data!{RESET}")
         print_statistics(rl_router)
-    
+
     while True:
         try:
             # Get user query
             query = input(f"{BOLD}> {RESET}").strip()
-            
+
             if not query:
                 continue
-            
+
             # Handle commands
-            if query.lower() in ['exit', 'quit', 'q']:
+            if query.lower() in ["exit", "quit", "q"]:
                 print(f"\n{GREEN}Goodbye! Model improvements saved.{RESET}\n")
                 break
-            
-            if query.lower() == 'stats':
+
+            if query.lower() == "stats":
                 print_statistics(rl_router)
                 continue
-            
-            if query.lower() == 'reset':
+
+            if query.lower() == "reset":
                 confirm = input(f"{RED}⚠ Reset all learning? (yes/no): {RESET}").strip().lower()
-                if confirm == 'yes':
+                if confirm == "yes":
                     rl_router.reset_learning()
                     print(f"{YELLOW}✓ Learning reset. Starting fresh!{RESET}\n")
                 continue
-            
-            if query.lower() in ['help', '?']:
+
+            if query.lower() in ["help", "?"]:
                 print("\nAvailable commands:")
                 print(f"  {BOLD}exit, quit, q{RESET}  - Exit the CLI")
                 print(f"  {BOLD}stats{RESET}          - Show model statistics")
                 print(f"  {BOLD}reset{RESET}          - Reset all learning")
                 print(f"  {BOLD}help, ?{RESET}        - Show this help\n")
                 continue
-            
+
             # Get model prediction (but don't use for routing yet)
             predicted_route, confidence_scores = rl_router.route_query(query)
-            
+
             # Show prediction to user
             print_prediction_panel(predicted_route, confidence_scores)
-            
+
             # User selects actual category
             actual_route = get_user_category_selection()
-            
+
             if actual_route is None:
                 print(f"{DIM}Cancelled. No learning applied.{RESET}\n")
                 continue
-            
+
             # Record feedback and update model
             feedback = rl_router.record_feedback(
                 query=query,
                 predicted_route=predicted_route,
                 actual_route=actual_route,
-                confidence_scores=confidence_scores
+                confidence_scores=confidence_scores,
             )
-            
+
             # Show learning result
             print_feedback_result(predicted_route, actual_route, feedback.reward)
-            
+
             # Execute query with the ACTUAL route (user-selected)
             execute_with_streaming(query, actual_route)
-            
+
             # Show quick stats update every 5 queries
             if rl_router.total_predictions % 5 == 0:
                 metrics = rl_router.get_metrics()
                 acc = metrics["overall_accuracy"]
                 total = metrics["total_predictions"]
-                
+
                 if acc >= 0.8:
                     color = GREEN
                     emoji = "🎯"
@@ -380,10 +381,12 @@ def main():
                 else:
                     color = CYAN
                     emoji = "📊"
-                
-                print(f"{DIM}─── {emoji} Progress: {color}{acc:.1%}{RESET}{DIM} accuracy "
-                      f"({total} queries) ───{RESET}\n")
-        
+
+                print(
+                    f"{DIM}─── {emoji} Progress: {color}{acc:.1%}{RESET}{DIM} accuracy "
+                    f"({total} queries) ───{RESET}\n"
+                )
+
         except KeyboardInterrupt:
             print(f"\n\n{YELLOW}Interrupted. Type 'exit' to quit.{RESET}\n")
             continue
@@ -393,6 +396,7 @@ def main():
         except Exception as e:
             print(f"\n{RED}Error: {e}{RESET}")
             import traceback
+
             traceback.print_exc()
 
 

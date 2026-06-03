@@ -1,8 +1,7 @@
 import logging
-from typing import Any, List, Optional, Literal
+from typing import Any, Literal
 
 from langchain_chroma import Chroma
-from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableLambda, RunnablePassthrough
@@ -38,9 +37,7 @@ def get_retriever():
         embedding_function=embeddings,
     )
 
-    _retriever = _vectorstore.as_retriever(
-        search_kwargs={"k": 5}
-    )
+    _retriever = _vectorstore.as_retriever(search_kwargs={"k": 5})
 
     return _retriever
 
@@ -70,7 +67,7 @@ def format_docs(docs) -> str:
 # -------------------------
 # RAG chain (documents)
 # -------------------------
-def get_rag_chain(callbacks: Optional[List[Any]] = None):
+def get_rag_chain(callbacks: list[Any] | None = None):
     global _rag_chain
 
     if _rag_chain and not callbacks:
@@ -116,8 +113,8 @@ Question:
 def run_rag_mode(
     query: str,
     mode: Literal["document", "image"] = "document",
-    callbacks: Optional[List[Any]] = None,
-) -> Optional[str]:
+    callbacks: list[Any] | None = None,
+) -> str | None:
     """
     mode="document" → text RAG using vector DB
     mode="image"    → image retrieval via Google + CLIP
@@ -132,11 +129,7 @@ def run_rag_mode(
             return None
 
         try:
-            results = search_and_retrieve(
-                query,
-                num_images=10,
-                top_k=5
-            )
+            results = search_and_retrieve(query, num_images=10, top_k=5)
         except Exception as exc:
             logger.error("Image retrieval failed for query %r: %s", query, exc)
             return None
@@ -169,18 +162,14 @@ def run_rag_mode(
 # -------------------------
 # Convenience wrapper
 # -------------------------
-def run_rag(query: str, callbacks: Optional[List[Any]] = None) -> Optional[str]:
-    return run_rag_mode(
-        query=query,
-        mode="document",
-        callbacks=callbacks
-    )
+def run_rag(query: str, callbacks: list[Any] | None = None) -> str | None:
+    return run_rag_mode(query=query, mode="document", callbacks=callbacks)
 
 
 # -------------------------
 # Scored semantic search
 # -------------------------
-def search_with_scores(query: str, k: int = 5) -> List[dict]:
+def search_with_scores(query: str, k: int = 5) -> list[dict]:
     """
     Semantic search returning ranked chunks with relevance scores.
 
@@ -214,7 +203,7 @@ def search_with_scores(query: str, k: int = 5) -> List[dict]:
 # -------------------------
 # Source citations
 # -------------------------
-def get_sources(query: str) -> List[str]:
+def get_sources(query: str) -> list[str]:
     docs = retrieve_docs(query)
     sources = []
 
@@ -229,7 +218,7 @@ def get_sources(query: str) -> List[str]:
 # -------------------------
 # META execution
 # -------------------------
-def run_meta(query: str, callbacks: Optional[List[Any]] = None) -> str:
+def run_meta(query: str, callbacks: list[Any] | None = None) -> str:
     llm = get_llm(streaming=True, callbacks=callbacks)
 
     meta_prompt = f"""Based on this system information:
@@ -254,7 +243,7 @@ Assistant:"""
 # -------------------------
 # CHAT execution
 # -------------------------
-def run_chat(query: str, callbacks: Optional[List[Any]] = None) -> str:
+def run_chat(query: str, callbacks: list[Any] | None = None) -> str:
     llm = get_llm(streaming=True, callbacks=callbacks)
 
     chat_prompt = f"""{CORTEX_SYSTEM_PROMPT}
