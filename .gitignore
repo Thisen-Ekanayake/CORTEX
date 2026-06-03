@@ -55,3 +55,7 @@ testing.ipynb
 
 # ── Exceptions ───────────────────────────────────────────────────────────────
 !requirements.txt
+# web_ui build config — required by the frontend CI (npm ci, tsc, dependency cache)
+!web_ui/package.json
+!web_ui/package-lock.json
+!web_ui/tsconfig.json
