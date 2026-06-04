@@ -91,6 +91,10 @@ export interface DocumentInfo {
   type: string
   size: string
   updated: string
+  /** Raw file size in bytes, for sorting. */
+  sizeBytes: number
+  /** ISO-8601 modification time, for sorting. */
+  modifiedAt: string
 }
 
 export interface DocumentsResponse {

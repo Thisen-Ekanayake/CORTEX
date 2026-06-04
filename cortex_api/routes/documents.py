@@ -60,6 +60,9 @@ def list_documents() -> dict:
                     "type": _TYPE_LABELS[ext],
                     "size": _human_size(st.st_size),
                     "updated": _human_age(st.st_mtime),
+                    # Raw values so the UI can sort by size and modification time.
+                    "sizeBytes": st.st_size,
+                    "modifiedAt": datetime.fromtimestamp(st.st_mtime, UTC).isoformat(),
                 }
             )
     return {"documents": documents, "indexedCount": len(documents)}

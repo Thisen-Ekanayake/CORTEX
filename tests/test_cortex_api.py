@@ -55,6 +55,10 @@ def test_list_documents(client, monkeypatch, tmp_path):
     assert "a.txt" in names
     assert "ignore.bin" not in names
     assert body["indexedCount"] == 1
+    # Raw sortable fields are exposed alongside the human-friendly strings.
+    doc = body["documents"][0]
+    assert doc["sizeBytes"] == len("hello")
+    assert isinstance(doc["modifiedAt"], str) and "T" in doc["modifiedAt"]
 
 
 def test_upload_document_ingests(client, monkeypatch, tmp_path):

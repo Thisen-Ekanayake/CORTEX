@@ -7,10 +7,6 @@ import { Outlet } from 'react-router-dom'
 export function Layout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
-  // Only show context panel on Chat page for now, or always?
-  // Let's show it always if screen is large enough, as per "Professional UI"
-  const showContextPanel = true
-
   return (
     <div className="flex h-screen overflow-hidden bg-bg-base text-text-primary font-sans">
       <Sidebar
@@ -26,7 +22,7 @@ export function Layout() {
             <Outlet />
           </div>
 
-          {showContextPanel && <ContextPanel />}
+          <ContextPanel />
         </main>
       </div>
     </div>
