@@ -1,25 +1,6 @@
-export const stats = [
-  { title: 'Documents indexed', value: '1,247', subtitle: 'Last sync: 2 min ago', trend: 'up' as const, trendValue: '+12' },
-  { title: 'Queries today', value: '89', subtitle: 'RAG: 62 · Chat: 27', trend: 'up' as const, trendValue: '+8%' },
-  { title: 'Router accuracy', value: '94%', subtitle: '7-day rolling', trend: 'neutral' as const, trendValue: '—' },
-  { title: 'Active sessions', value: '3', subtitle: 'You + 2 background', trend: 'down' as const, trendValue: '-1' },
-]
-
-export const chartData = [
-  { name: 'Mon', queries: 42, rag: 28 },
-  { name: 'Tue', queries: 58, rag: 41 },
-  { name: 'Wed', queries: 51, rag: 35 },
-  { name: 'Thu', queries: 67, rag: 48 },
-  { name: 'Fri', queries: 89, rag: 62 },
-  { name: 'Sat', queries: 34, rag: 22 },
-  { name: 'Sun', queries: 45, rag: 31 },
-]
-
-export const alerts = [
-  { id: '1', type: 'info' as const, message: 'RAG index updated with 3 new documents.', time: '5m ago' },
-  { id: '2', type: 'success' as const, message: 'Router confidence threshold tuned.', time: '1h ago' },
-  { id: '3', type: 'warning' as const, message: 'High memory usage on last query.', time: '2h ago' },
-]
+// NOTE: Overview stats, query-volume chart and activity feed are now served
+// live from the cortex_api `/api/stats` endpoint (see pages/Home.tsx). The
+// former hardcoded `stats`, `chartData` and `alerts` arrays were removed.
 
 export const searchResults = [
   { id: '1', title: 'CORTEX Architecture Overview', snippet: '...intelligent query routing to RAG, CHAT, or META handlers. Reinforcement learning improves routing over time.', score: 0.94, source: 'README.md' },

@@ -5,6 +5,8 @@ import os
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from cortex_api.metrics import record_query
+
 router = APIRouter(prefix="/api", tags=["Search"])
 
 
@@ -29,4 +31,7 @@ def search(req: SearchRequest) -> dict:
                 "page": page if page and page.upper() != "N/A" else None,
             }
         )
+
+    top_score = results[0]["score"] if results else None
+    record_query("search", kind="search", query=req.query, confidence=top_score)
     return {"query": req.query, "results": results}

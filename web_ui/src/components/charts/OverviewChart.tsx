@@ -7,7 +7,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
-import { chartData } from '../../data/placeholder'
+import type { VolumePoint } from '../../lib/api'
 
 const COLORS = {
   queries: 'rgba(88, 166, 255, 0.4)',
@@ -30,11 +30,11 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
   )
 }
 
-export function OverviewChart() {
+export function OverviewChart({ data }: { data: VolumePoint[] }) {
   return (
     <div className="chart-wrap">
       <ResponsiveContainer width="100%" height={280}>
-        <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+        <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="queriesGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={COLORS.queriesStroke} stopOpacity={0.4} />

@@ -16,6 +16,8 @@ import queue
 import threading
 from collections.abc import Iterator
 
+from cortex_api.metrics import record_query
+
 logger = logging.getLogger(__name__)
 
 # Sentinel marking the end of the token stream.
@@ -69,6 +71,10 @@ def stream_chat(query: str) -> Iterator[str]:
             result_box["route"] = route.value
             result_box["scores"] = scores or {}
             result_box["sources"] = sources
+            top_conf = (scores or {}).get(route.value)
+            if top_conf is None and scores:
+                top_conf = max(scores.values())
+            record_query(route.value, kind="chat", query=query, confidence=top_conf)
         except Exception as exc:  # noqa: BLE001 — surface any failure to the client
             logger.exception("chat execution failed for query %r", query)
             result_box["error"] = str(exc)

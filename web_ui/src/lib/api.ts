@@ -140,6 +140,42 @@ export async function search(query: string, k = 5): Promise<SearchHit[]> {
   return data.results ?? []
 }
 
+// ── Stats (Overview dashboard) ────────────────────────────────────────────────
+
+export interface VolumePoint {
+  name: string
+  date: string
+  queries: number
+  rag: number
+}
+
+export interface ActivityItem {
+  id: string
+  type: 'info' | 'success' | 'warning'
+  message: string
+  time: string
+}
+
+export interface Stats {
+  documentsIndexed: number
+  queriesToday: number
+  queriesYesterday: number
+  queriesLast7Days: number
+  ragQueries: number
+  chatQueries: number
+  routerAccuracy: number | null
+  totalPredictions: number
+  volumeSeries: VolumePoint[]
+  activity: ActivityItem[]
+}
+
+/** Fetch real Overview metrics from the cortex_api service. */
+export async function getStats(): Promise<Stats> {
+  const res = await fetch(`${BASE}/stats`)
+  if (!res.ok) throw new Error(`Failed to load stats (${res.status})`)
+  return res.json()
+}
+
 // ── Voice (STT / TTS) ─────────────────────────────────────────────────────────
 
 /** Transcribe recorded audio to text via Parakeet. */

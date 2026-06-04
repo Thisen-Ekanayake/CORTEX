@@ -45,10 +45,11 @@ def health_check() -> dict:
 # ── Route registration ────────────────────────────────────────────────────────
 # Route modules keep heavy ML imports inside their service layer (lazy
 # singletons), so importing them here does not load any models at startup.
-from cortex_api.routes import chat, documents, search, vision, voice  # noqa: E402
+from cortex_api.routes import chat, documents, search, stats, vision, voice  # noqa: E402
 
 app.include_router(chat.router)
 app.include_router(documents.router)
 app.include_router(search.router)
+app.include_router(stats.router)
 app.include_router(voice.router)
 app.include_router(vision.router)
