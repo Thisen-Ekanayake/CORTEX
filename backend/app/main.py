@@ -4,7 +4,17 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.routes import auth, users, preferences, security, workspaces, notifications, api_keys
+from app.routes import (
+    auth,
+    users,
+    preferences,
+    security,
+    workspaces,
+    notifications,
+    api_keys,
+    projects,
+    conversations,
+)
 
 settings = get_settings()
 
@@ -32,6 +42,8 @@ app.include_router(security.router)
 app.include_router(workspaces.router)
 app.include_router(notifications.router)
 app.include_router(api_keys.router)
+app.include_router(projects.router)
+app.include_router(conversations.router)
 
 
 # ── Data export endpoint (doesn't fit neatly into a CRUD router) ──

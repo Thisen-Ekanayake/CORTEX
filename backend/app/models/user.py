@@ -60,6 +60,12 @@ class User(Base):
     api_keys: Mapped[list["ApiKey"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+    projects: Mapped[list["Project"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    conversations: Mapped[list["Conversation"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<User {self.email}>"
@@ -98,3 +104,4 @@ from app.models.session import UserSession  # noqa: E402
 from app.models.notification import NotificationPreference  # noqa: E402
 from app.models.workspace import Workspace, WorkspaceMember  # noqa: E402
 from app.models.api_key import ApiKey  # noqa: E402
+from app.models.conversation import Project, Conversation  # noqa: E402

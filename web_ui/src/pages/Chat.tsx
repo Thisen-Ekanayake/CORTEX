@@ -1,10 +1,19 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { chatStream, tts, vlm } from '../lib/api'
+import {
+  getConversation,
+  createConversation,
+  appendMessage,
+  UnauthorizedError,
+} from '../lib/backendApi'
+import { useConversations } from '../contexts/ConversationsContext'
+import { useAuth } from '../contexts/AuthContext'
 import { VoiceCommand } from '../components/voice/VoiceCommand'
 
 interface Message {
-  id: number
+  id: string
   role: 'user' | 'assistant'
   content: string
   route?: string
@@ -12,28 +21,110 @@ interface Message {
   imageUrl?: string
 }
 
-const INITIAL_MESSAGES: Message[] = [
-  {
-    id: 1,
-    role: 'assistant',
-    content: "Hello! I'm CORTEX, your advanced AI assistant. I can help you analyze documents, generate reports, or answer complex queries. How can I assist you today?"
-  }
-]
+const GREETING: Message = {
+  id: 'greeting',
+  role: 'assistant',
+  content:
+    "Hello! I'm CORTEX, your advanced AI assistant. I can help you analyze documents, generate reports, or answer complex queries. How can I assist you today?",
+}
+
+const localId = () =>
+  typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `local-${Date.now()}-${Math.random().toString(16).slice(2)}`
 
 export function Chat() {
-  const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES)
+  const { id: routeId } = useParams()
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const { refresh } = useConversations()
+  const { user, logout } = useAuth()
+
+  const isNew = !routeId || routeId === 'new'
+
+  const [messages, setMessages] = useState<Message[]>([GREETING])
+  const [conversationId, setConversationId] = useState<string | null>(null)
   const [input, setInput] = useState('')
   const [isThinking, setIsThinking] = useState(false)
   const [thinkingStep, setThinkingStep] = useState('')
-  const [speakingId, setSpeakingId] = useState<number | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [speakingId, setSpeakingId] = useState<string | null>(null)
   const [attachedImage, setAttachedImage] = useState<File | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
+  // The conversation id we already hold locally, so navigating to /chat/:id
+  // right after creating it doesn't trigger a redundant reload.
+  const ownedIdRef = useRef<string | null>(null)
+
+  // Load (or reset) the conversation when the route id changes.
+  useEffect(() => {
+    let active = true
+    setLoadError(null)
+    setSaveError(null)
+
+    if (isNew) {
+      setMessages([GREETING])
+      setConversationId(null)
+      ownedIdRef.current = null
+      return
+    }
+
+    const id = routeId as string
+    if (id === ownedIdRef.current) {
+      // We just created this conversation locally — keep current messages.
+      return
+    }
+
+    getConversation(id)
+      .then((conv) => {
+        if (!active) return
+        ownedIdRef.current = id
+        setConversationId(id)
+        setMessages(
+          conv.messages.length === 0
+            ? [GREETING]
+            : conv.messages.map((m) => ({
+                id: m.id,
+                role: m.role,
+                content: m.content,
+                route: m.route ?? undefined,
+                sources: m.sources ?? undefined,
+                imageUrl: m.image_url ?? undefined,
+              })),
+        )
+      })
+      .catch((err) => {
+        if (!active) return
+        if (err instanceof UnauthorizedError) {
+          logout()
+          navigate('/login', { replace: true })
+          return
+        }
+        setLoadError(err instanceof Error ? err.message : 'Failed to load conversation')
+      })
+
+    return () => {
+      active = false
+    }
+  }, [routeId, isNew, navigate, logout])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isThinking])
+
+  const handleAuthError = useCallback(
+    (err: unknown): boolean => {
+      if (err instanceof UnauthorizedError) {
+        logout()
+        navigate('/login', { replace: true })
+        return true
+      }
+      return false
+    },
+    [logout, navigate],
+  )
 
   const speak = async (msg: Message) => {
     if (!msg.content.trim()) return
@@ -51,8 +142,42 @@ export function Chat() {
     }
   }
 
-  const patchMessage = (id: number, patch: Partial<Message>) => {
-    setMessages(prev => prev.map(m => (m.id === id ? { ...m, ...patch } : m)))
+  const patchMessage = (id: string, patch: Partial<Message>) => {
+    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)))
+  }
+
+  /** Ensure a persisted conversation exists; returns its id (or null on failure). */
+  const ensureConversation = async (): Promise<string | null> => {
+    if (conversationId) return conversationId
+    try {
+      const projectId = searchParams.get('project') ?? undefined
+      const created = await createConversation({ projectId })
+      ownedIdRef.current = created.id
+      setConversationId(created.id)
+      navigate(`/chat/${created.id}`, { replace: true })
+      return created.id
+    } catch (err) {
+      if (handleAuthError(err)) return null
+      setSaveError(err instanceof Error ? err.message : 'Could not start conversation')
+      return null
+    }
+  }
+
+  const persist = async (
+    convId: string,
+    msg: { role: 'user' | 'assistant'; content: string; route?: string; sources?: string[] },
+  ) => {
+    try {
+      await appendMessage(convId, {
+        role: msg.role,
+        content: msg.content,
+        route: msg.route ?? null,
+        sources: msg.sources ?? null,
+      })
+    } catch (err) {
+      if (handleAuthError(err)) return
+      setSaveError(err instanceof Error ? err.message : 'Message not saved')
+    }
   }
 
   const handleSend = async (e: React.FormEvent) => {
@@ -64,16 +189,24 @@ export function Chat() {
     const prompt = input.trim() || (image ? 'Describe this image.' : '')
 
     const userMsg: Message = {
-      id: Date.now(),
+      id: localId(),
       role: 'user',
       content: prompt,
       imageUrl: image ? URL.createObjectURL(image) : undefined,
     }
-    const assistantId = userMsg.id + 1
-    setMessages(prev => [...prev, userMsg, { id: assistantId, role: 'assistant', content: '' }])
+    const assistantId = localId()
+    setMessages((prev) => [...prev, userMsg, { id: assistantId, role: 'assistant', content: '' }])
     setInput('')
     setAttachedImage(null)
     setIsThinking(true)
+    setSaveError(null)
+
+    // Create the conversation on first message, then persist the user turn.
+    const convId = await ensureConversation()
+    if (convId) {
+      await persist(convId, { role: 'user', content: prompt })
+      refresh() // surface the new chat / auto-title in the sidebar
+    }
 
     // ── Vision path: an image is attached → Qwen2.5-VL ──
     if (image) {
@@ -81,10 +214,14 @@ export function Chat() {
       try {
         const description = await vlm(image, prompt)
         patchMessage(assistantId, { content: description, route: 'vlm' })
+        if (convId) await persist(convId, { role: 'assistant', content: description, route: 'vlm' })
       } catch (err) {
-        patchMessage(assistantId, { content: `⚠️ ${err instanceof Error ? err.message : 'Vision request failed'}` })
+        patchMessage(assistantId, {
+          content: `⚠️ ${err instanceof Error ? err.message : 'Vision request failed'}`,
+        })
       } finally {
         setIsThinking(false)
+        if (convId) refresh()
       }
       return
     }
@@ -92,26 +229,46 @@ export function Chat() {
     // ── Text path: routed RAG/CHAT/META streaming ──
     setThinkingStep('Routing query...')
     let streamed = false
+    let acc = ''
+    let finalRoute: string | undefined
+    let finalSources: string[] | undefined
     await chatStream(prompt, {
       onToken: (token) => {
         if (!streamed) {
           streamed = true
           setIsThinking(false)
         }
-        setMessages(prev =>
-          prev.map(m => (m.id === assistantId ? { ...m, content: m.content + token } : m))
+        acc += token
+        setMessages((prev) =>
+          prev.map((m) => (m.id === assistantId ? { ...m, content: m.content + token } : m)),
         )
       },
       onDone: (info) => {
         setIsThinking(false)
+        finalRoute = info.route
+        finalSources = info.sources
         patchMessage(assistantId, { route: info.route, sources: info.sources })
       },
       onError: (message) => {
         setIsThinking(false)
-        patchMessage(assistantId, { content: `⚠️ ${message}` })
+        acc = `⚠️ ${message}`
+        patchMessage(assistantId, { content: acc })
       },
     })
+
+    if (convId && acc) {
+      await persist(convId, {
+        role: 'assistant',
+        content: acc,
+        route: finalRoute,
+        sources: finalSources,
+      })
+      refresh()
+    }
   }
+
+  const userInitials =
+    user?.avatar_initials || (user?.display_name?.[0] ?? 'U').toUpperCase()
 
   return (
     <div className="flex flex-col h-full relative bg-bg-base/50">
@@ -124,6 +281,11 @@ export function Chat() {
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 scroll-smooth custom-scrollbar relative">
         <div className="max-w-4xl mx-auto space-y-10">
+          {loadError && (
+            <div className="max-w-2xl mx-auto text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3">
+              {loadError}
+            </div>
+          )}
           {messages.filter((msg) => !(msg.role === 'assistant' && msg.content === '')).map((msg) => (
             <motion.div
               key={msg.id}
@@ -210,7 +372,7 @@ export function Chat() {
               {msg.role === 'user' && (
                 <div className="shrink-0">
                   <div className="w-10 h-10 rounded-xl bg-bg-elevated border border-border-subtle flex items-center justify-center shadow-md">
-                    <span className="text-text-secondary font-bold text-sm">TE</span>
+                    <span className="text-text-secondary font-bold text-sm">{userInitials}</span>
                   </div>
                 </div>
               )}
@@ -254,6 +416,11 @@ export function Chat() {
       {/* Input Area */}
       <div className="px-4 pb-8 pt-2 md:px-8 md:pb-10 relative z-10">
         <div className="max-w-4xl mx-auto">
+          {saveError && (
+            <p className="text-center text-[11px] text-amber-400/80 mb-2">
+              {saveError}
+            </p>
+          )}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -316,10 +483,10 @@ export function Chat() {
 
                 <button
                   type="submit"
-                  disabled={!input.trim() || isThinking}
+                  disabled={(!input.trim() && !attachedImage) || isThinking}
                   className={`
                     mb-1 p-2.5 rounded-xl transition-all duration-300 transform active:scale-95
-                    ${input.trim() && !isThinking
+                    ${(input.trim() || attachedImage) && !isThinking
                       ? 'bg-accent-primary text-white shadow-glow hover:translate-y-[-2px]'
                       : 'bg-white/5 text-text-tertiary'
                     }
